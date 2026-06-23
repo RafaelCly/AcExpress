@@ -396,7 +396,94 @@ body {
   gap: 1rem;
   transition: border-color var(--transition);
 }
-.pedido-card:hover { border-color: rgba(255,255,255,0.2); }
+.pedido-card:hover { border-color: rgba(255,255,255,0.2); cursor: pointer; }
+
+.ver-detalle {
+  font-size: 0.75rem;
+  color: var(--blue-300);
+  font-weight: 600;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ver-trazabilidad {
+  font-size: 0.75rem;
+  color: var(--text-hint);
+  font-weight: 600;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px dashed var(--glass-border);
+  border-radius: 100px;
+  padding: 0.15rem 0.6rem;
+  transition: all var(--transition);
+}
+.ver-trazabilidad:hover { color: var(--text-mute); border-color: rgba(255,255,255,0.2); }
+
+/* ─── Modal ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.modal-box {
+  background: #0f2040;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  animation: slideUp 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.modal-title { font-size: 1rem; font-weight: 700; color: var(--white); }
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-mute);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all var(--transition);
+  width: auto; margin: 0;
+}
+.modal-close:hover { color: var(--white); background: var(--glass-bg); }
+
+.modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.detalle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+.detalle-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+.detalle-label { font-size: 0.8125rem; color: var(--text-mute); font-weight: 500; flex-shrink: 0; }
+.detalle-valor { font-size: 0.875rem; color: var(--text-main); font-weight: 600; text-align: right; }
 
 .pedido-info { display: flex; flex-direction: column; gap: 0.25rem; }
 .pedido-nombre { font-weight: 600; color: var(--text-main); font-size: 0.9375rem; }

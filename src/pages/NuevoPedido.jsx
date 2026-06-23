@@ -19,13 +19,47 @@ function validar(form) {
   return null
 }
 
+function DetallePedido({ pedido, onClose }) {
+  if (!pedido) return null
+  const campos = [
+    { label: 'Nombre del pedido',   valor: pedido.nombre_pedido },
+    { label: 'Cliente',             valor: pedido.nombre_cliente },
+    { label: 'Teléfono',            valor: pedido.telefono_cliente },
+    { label: 'Peso',                valor: pedido.peso ? `${pedido.peso} kg` : '—' },
+    { label: 'Fecha de recojo',     valor: pedido.dia_recojo_origen ?? '—' },
+    { label: 'Dirección de recojo', valor: pedido.ubicacion_origen || '—' },
+    { label: 'Estado de acopio',    valor: pedido.estado_acopio },
+    { label: 'Estado de entrega',   valor: pedido.estado_entrega },
+    { label: 'Registrado',          valor: new Date(pedido.created_at).toLocaleString('es-PE') },
+  ]
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Detalle del pedido</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {campos.map(c => (
+            <div key={c.label} className="detalle-row">
+              <span className="detalle-label">{c.label}</span>
+              <span className="detalle-valor">{c.valor}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function NuevoPedido() {
-  const [form, setForm]       = useState(VACIO)
-  const [msg, setMsg]         = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [pedidos, setPedidos] = useState([])
+  const [form, setForm]           = useState(VACIO)
+  const [msg, setMsg]             = useState(null)
+  const [loading, setLoading]     = useState(false)
+  const [pedidos, setPedidos]     = useState([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [archivoExcel, setArchivoExcel] = useState(null)
+  const [pedidoDetalle, setPedidoDetalle] = useState(null)
   const inputExcelRef = useRef(null)
   const navigate = useNavigate()
   const { user, rol } = useAuth()
@@ -87,7 +121,6 @@ export default function NuevoPedido() {
 
       <div className="page-content">
 
-        {/* Acciones */}
         <div className="actions-bar">
           <h2 className="card-title">Mis pedidos</h2>
           <div className="actions-btns">
@@ -111,10 +144,8 @@ export default function NuevoPedido() {
           </div>
         </div>
 
-        {/* Mensaje global */}
         {msg && !mostrarForm && <p className={`msg ${msg.tipo}`}>{msg.tipo === 'ok' ? '✓' : '⚠'} {msg.texto}</p>}
 
-        {/* Formulario */}
         {mostrarForm && (
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h3 className="card-title" style={{ fontSize: '1.1rem', marginBottom: '1.25rem' }}>Nuevo pedido</h3>
@@ -173,7 +204,6 @@ export default function NuevoPedido() {
           </div>
         )}
 
-        {/* Lista de pedidos */}
         {pedidos.length === 0 ? (
           <div className="empty-state">
             <p className="empty-icon">📦</p>
@@ -195,12 +225,18 @@ export default function NuevoPedido() {
                   <span className={`estado-badge ${p.estado_entrega === 'Finalizado' ? 'ok' : 'pending'}`}>
                     {p.estado_entrega}
                   </span>
+                  <span className="ver-detalle" onClick={e => { e.stopPropagation(); setPedidoDetalle(p) }}>Ver →</span>
+                  <span className="ver-trazabilidad" onClick={e => e.stopPropagation()} title="Disponible en Sprint 3">
+                    📍 Trazabilidad
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <DetallePedido pedido={pedidoDetalle} onClose={() => setPedidoDetalle(null)} />
     </div>
   )
 }
