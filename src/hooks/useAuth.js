@@ -1,32 +1,36 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+async function fetchRol(userId) {
+  const { data } = await supabase
+    .from('clientes').select('rol')
+    .eq('id_cliente', userId).single()
+  return data?.rol ?? null
+}
+
 export function useAuth() {
-  const [user, setUser] = useState(undefined)   // undefined = cargando
-  const [rol, setRol]   = useState(null)
+  const [user, setUser]       = useState(undefined)  // undefined = cargando
+  const [rol, setRol]         = useState(undefined)  // undefined = cargando
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { setUser(null); return }
+      if (!session) { setUser(null); setRol(null); return }
       setUser(session.user)
-      const { data } = await supabase
-        .from('clientes').select('rol')
-        .eq('id_cliente', session.user.id).single()
-      setRol(data?.rol ?? null)
+      setRol(await fetchRol(session.user.id))
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!session) { setUser(null); setRol(null); return }
         setUser(session.user)
-        const { data } = await supabase
-          .from('clientes').select('rol')
-          .eq('id_cliente', session.user.id).single()
-        setRol(data?.rol ?? null)
+        setRol(await fetchRol(session.user.id))
       }
     )
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, rol, cargando: user === undefined }
+  // cargando mientras user O rol sigan siendo undefined
+  const cargando = user === undefined || rol === undefined
+
+  return { user, rol, cargando }
 }

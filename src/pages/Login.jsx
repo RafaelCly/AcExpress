@@ -43,11 +43,17 @@ export default function Login() {
       return
     }
 
+    // Espera que la sesión esté activa antes de leer clientes
+    await supabase.auth.setSession({
+      access_token:  data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
+
     const { data: perfil } = await supabase
       .from('clientes').select('rol')
       .eq('id_cliente', data.user.id).single()
 
-    navigate(RUTA_POR_ROL[perfil?.rol] ?? '/')
+    navigate(RUTA_POR_ROL[perfil?.rol] ?? '/pedidos')
   }
 
   return (
