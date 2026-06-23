@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -25,6 +25,8 @@ export default function NuevoPedido() {
   const [loading, setLoading] = useState(false)
   const [pedidos, setPedidos] = useState([])
   const [mostrarForm, setMostrarForm] = useState(false)
+  const [archivoExcel, setArchivoExcel] = useState(null)
+  const inputExcelRef = useRef(null)
   const navigate = useNavigate()
   const { user, rol } = useAuth()
 
@@ -89,8 +91,19 @@ export default function NuevoPedido() {
         <div className="actions-bar">
           <h2 className="card-title">Mis pedidos</h2>
           <div className="actions-btns">
-            <button className="btn-excel" disabled title="Disponible en Sprint 2">
-              📊 Importar Excel
+            <input
+              ref={inputExcelRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const file = e.target.files[0]
+                if (file) setArchivoExcel(file.name)
+                e.target.value = ''
+              }}
+            />
+            <button className="btn-excel" onClick={() => inputExcelRef.current.click()}>
+              📊 {archivoExcel ? archivoExcel : 'Importar Excel'}
             </button>
             <button className="btn-primary btn-sm" onClick={() => { setMostrarForm(v => !v); setMsg(null) }}>
               {mostrarForm ? '✕ Cancelar' : '+ Nuevo pedido'}
