@@ -13,12 +13,6 @@ const EyeIcon = ({ open }) => open ? (
   </svg>
 )
 
-const ROLES = [
-  { value: 'cliente',    label: '📦 Cliente — registra pedidos' },
-  { value: 'acopio',    label: '🏭 Acopio — gestiona almacén' },
-  { value: 'repartidor',label: '🛵 Repartidor — entrega pedidos' },
-  { value: 'central',   label: '📡 Central — monitoreo' },
-]
 
 function mensajeError(msg) {
   if (msg?.includes('rate') || msg?.includes('security') || msg?.includes('seconds'))
@@ -32,7 +26,7 @@ function mensajeError(msg) {
 
 export default function Registro() {
   const [form, setForm] = useState({
-    email: '', password: '', confirmar: '', razon_social: '', rol: 'cliente'
+    email: '', password: '', confirmar: '', razon_social: ''
   })
   const [showPass, setShowPass] = useState(false)
   const [showConf, setShowConf] = useState(false)
@@ -69,7 +63,7 @@ export default function Registro() {
       login:        form.email,
       email:        form.email,
       razon_social: form.razon_social || null,
-      rol:          form.rol,
+      rol:          'cliente',
     })
 
     if (dbError) {
@@ -78,8 +72,7 @@ export default function Registro() {
       return
     }
 
-    const RUTA = { cliente: '/pedidos', acopio: '/acopio', repartidor: '/ruta', central: '/monitoreo' }
-    navigate(RUTA[form.rol] ?? '/pedidos')
+    navigate('/pedidos')
   }
 
   return (
@@ -107,15 +100,6 @@ export default function Registro() {
           <input id="razon_social" name="razon_social" type="text"
             placeholder="Empresa o nombre completo"
             value={form.razon_social} onChange={onChange} />
-        </div>
-
-        <div className="field">
-          <label htmlFor="rol">Rol <span className="req">*</span></label>
-          <select id="rol" name="rol" value={form.rol} onChange={onChange} className="select-input">
-            {ROLES.map(r => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
         </div>
 
         <div className="field">
