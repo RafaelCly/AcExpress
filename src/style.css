@@ -227,6 +227,35 @@ body {
 
 .page-header .logo span { color: var(--blue-300); }
 
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.user-email {
+  font-size: 0.8125rem;
+  color: var(--text-mute);
+}
+
+.role-badge {
+  background: rgba(59,130,246,0.15);
+  color: var(--blue-300);
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 100px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-mute);

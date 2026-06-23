@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 
 const VACIO = {
   nombre_pedido:     '',
@@ -23,6 +24,7 @@ export default function NuevoPedido() {
   const [msg, setMsg]     = useState(null)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { user, rol } = useAuth()
 
   const onChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -59,7 +61,13 @@ export default function NuevoPedido() {
     <div className="page-root">
       <header className="page-header">
         <div className="logo">🚚 AC <span>Express</span></div>
-        <button className="btn-ghost" onClick={cerrarSesion}>Cerrar sesión</button>
+        <div className="header-user">
+          <div className="user-info">
+            <span className="user-email">{user?.email}</span>
+            <span className="role-badge">{rol}</span>
+          </div>
+          <button className="btn-ghost" onClick={cerrarSesion}>Cerrar sesión</button>
+        </div>
       </header>
 
       <div className="page-content">
