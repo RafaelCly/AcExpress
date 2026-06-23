@@ -13,12 +13,31 @@ const EyeIcon = ({ open }) => open ? (
   </svg>
 )
 
+const ROLES = [
+  { value: 'cliente',    label: '📦 Cliente — registra pedidos' },
+  { value: 'acopio',    label: '🏭 Acopio — gestiona almacén' },
+  { value: 'repartidor',label: '🛵 Repartidor — entrega pedidos' },
+  { value: 'central',   label: '📡 Central — monitoreo' },
+]
+
+function mensajeError(msg) {
+  if (msg?.includes('rate') || msg?.includes('security') || msg?.includes('seconds'))
+    return 'Demasiados intentos. Espera unos segundos e intenta de nuevo.'
+  if (msg?.includes('already registered') || msg?.includes('duplicate'))
+    return 'Este correo ya está registrado. Inicia sesión.'
+  if (msg?.includes('password') && msg?.includes('weak'))
+    return 'Contraseña muy débil. Usa al menos 6 caracteres.'
+  return msg
+}
+
 export default function Registro() {
-  const [form, setForm] = useState({ email: '', password: '', confirmar: '', razon_social: '' })
-  const [showPass, setShowPass]   = useState(false)
-  const [showConf, setShowConf]   = useState(false)
-  const [error, setError]         = useState(null)
-  const [loading, setLoading]     = useState(false)
+  const [form, setForm] = useState({
+    email: '', password: '', confirmar: '', razon_social: '', rol: 'cliente'
+  })
+  const [showPass, setShowPass] = useState(false)
+  const [showConf, setShowConf] = useState(false)
+  const [error, setError]       = useState(null)
+  const [loading, setLoading]   = useState(false)
   const navigate = useNavigate()
 
   const onChange = e => setForm({ ...form, [e.target.name]: e.target.value })
@@ -34,35 +53,33 @@ export default function Registro() {
 
     setLoading(true)
 
-    // 1. Crear usuario en Supabase Auth
     const { data, error: authError } = await supabase.auth.signUp({
       email:    form.email,
       password: form.password,
     })
 
     if (authError) {
-      setError(authError.message)
+      setError(mensajeError(authError.message))
       setLoading(false)
       return
     }
 
-    // 2. Insertar en tabla clientes
     const { error: dbError } = await supabase.from('clientes').insert({
       id_cliente:   data.user.id,
       login:        form.email,
       email:        form.email,
       razon_social: form.razon_social || null,
-      rol:          'cliente',
+      rol:          form.rol,
     })
 
     if (dbError) {
-      setError(dbError.message)
+      setError(mensajeError(dbError.message))
       setLoading(false)
       return
     }
 
-    // 3. Ir directo al panel
-    navigate('/pedidos')
+    const RUTA = { cliente: '/pedidos', acopio: '/acopio', repartidor: '/ruta', central: '/monitoreo' }
+    navigate(RUTA[form.rol] ?? '/pedidos')
   }
 
   return (
@@ -74,38 +91,40 @@ export default function Registro() {
           <h1>AC <span>Express</span></h1>
         </div>
 
-        <p className="subtitle">Crea tu cuenta para empezar a registrar pedidos.</p>
+        <p className="subtitle">Crea tu cuenta para acceder al sistema.</p>
 
         <div className="divider" />
 
         <div className="field">
           <label htmlFor="email">Correo electrónico <span className="req">*</span></label>
-          <input
-            id="email" name="email" type="email"
-            autoComplete="email"
+          <input id="email" name="email" type="email" autoComplete="email"
             placeholder="correo@empresa.com"
-            value={form.email} onChange={onChange} required
-          />
+            value={form.email} onChange={onChange} required />
         </div>
 
         <div className="field">
           <label htmlFor="razon_social">Razón social / Nombre</label>
-          <input
-            id="razon_social" name="razon_social" type="text"
+          <input id="razon_social" name="razon_social" type="text"
             placeholder="Empresa o nombre completo"
-            value={form.razon_social} onChange={onChange}
-          />
+            value={form.razon_social} onChange={onChange} />
+        </div>
+
+        <div className="field">
+          <label htmlFor="rol">Rol <span className="req">*</span></label>
+          <select id="rol" name="rol" value={form.rol} onChange={onChange} className="select-input">
+            {ROLES.map(r => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
         </div>
 
         <div className="field">
           <label htmlFor="password">Contraseña <span className="req">*</span></label>
           <div className="input-eye">
-            <input
-              id="password" name="password"
+            <input id="password" name="password"
               type={showPass ? 'text' : 'password'}
               placeholder="Mínimo 6 caracteres"
-              value={form.password} onChange={onChange} required
-            />
+              value={form.password} onChange={onChange} required />
             <button type="button" className="eye-btn" onClick={() => setShowPass(v => !v)}>
               <EyeIcon open={showPass} />
             </button>
@@ -115,12 +134,10 @@ export default function Registro() {
         <div className="field">
           <label htmlFor="confirmar">Confirmar contraseña <span className="req">*</span></label>
           <div className="input-eye">
-            <input
-              id="confirmar" name="confirmar"
+            <input id="confirmar" name="confirmar"
               type={showConf ? 'text' : 'password'}
               placeholder="Repite la contraseña"
-              value={form.confirmar} onChange={onChange} required
-            />
+              value={form.confirmar} onChange={onChange} required />
             <button type="button" className="eye-btn" onClick={() => setShowConf(v => !v)}>
               <EyeIcon open={showConf} />
             </button>

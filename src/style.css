@@ -331,6 +331,96 @@ body {
   text-align: center;
 }
 
+/* ─── Select input ─── */
+.select-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+.select-input:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px var(--input-focus); }
+.select-input option { background: #0f2040; color: var(--text-main); }
+
+/* ─── Actions bar ─── */
+.actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.actions-btns {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-sm { padding: 0.55rem 1.1rem; font-size: 0.875rem; width: auto; margin: 0; }
+
+.btn-excel {
+  background: transparent;
+  color: var(--text-mute);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ─── Pedidos list ─── */
+.pedidos-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.pedido-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color var(--transition);
+}
+.pedido-card:hover { border-color: rgba(255,255,255,0.2); }
+
+.pedido-info { display: flex; flex-direction: column; gap: 0.25rem; }
+.pedido-nombre { font-weight: 600; color: var(--text-main); font-size: 0.9375rem; }
+.pedido-cliente { font-size: 0.8125rem; color: var(--text-mute); }
+
+.pedido-estados { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+.estado-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 100px;
+}
+.estado-badge.ok      { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.25); }
+.estado-badge.pending { background: rgba(148,163,184,0.1);  color: var(--text-mute); border: 1px solid var(--glass-border); }
+
+/* ─── Empty state ─── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.empty-icon  { font-size: 2.5rem; }
+.empty-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+.empty-desc  { font-size: 0.875rem; color: var(--text-mute); max-width: 280px; line-height: 1.6; }
+
 /* ─── Password toggle ─── */
 .input-eye {
   position: relative;
