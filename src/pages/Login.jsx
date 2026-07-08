@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { IconTruck } from '../components/Icons'
 
 const RUTA_POR_ROL = {
   cliente:    '/pedidos',
@@ -61,7 +62,7 @@ export default function Login() {
       <form onSubmit={onSubmit} className="login-form" noValidate>
 
         <div className="brand">
-          <div className="brand-icon">🚚</div>
+          <div className="brand-icon"><IconTruck /></div>
           <h1>AC <span>Express</span></h1>
         </div>
 

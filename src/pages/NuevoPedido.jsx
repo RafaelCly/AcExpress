@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import PageHeader from '../components/PageHeader'
+import { IconPackage, IconExcel, IconMapPin, IconEye } from '../components/Icons'
 
 const VACIO = {
   nombre_pedido:     '',
@@ -21,6 +22,7 @@ function validar(form) {
 
 function DetallePedido({ pedido, onClose }) {
   if (!pedido) return null
+  const link = `${window.location.origin}/seguimiento/${pedido.id_pedido}`
   const campos = [
     { label: 'Nombre del pedido',   valor: pedido.nombre_pedido },
     { label: 'Cliente',             valor: pedido.nombre_cliente },
@@ -46,6 +48,48 @@ function DetallePedido({ pedido, onClose }) {
               <span className="detalle-valor">{c.valor}</span>
             </div>
           ))}
+          <a href={link} target="_blank" rel="noreferrer" className="link-tracking">
+            <IconMapPin /> Ver enlace de seguimiento público
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Filas mock para previsualizar cómo la IA estructurará el Excel (Sprint 2)
+const FILAS_MOCK_EXCEL = [
+  { nombre_pedido: 'Repuestos moto',    nombre_cliente: 'Carlos Ruiz',   telefono_cliente: '912345678' },
+  { nombre_pedido: 'Caja de libros',    nombre_cliente: 'Ana Torres',    telefono_cliente: '987654321' },
+  { nombre_pedido: 'Equipo electrónico',nombre_cliente: 'Luis Vidal',    telefono_cliente: '956781234' },
+]
+
+function PreviewExcel({ archivo, onClose }) {
+  if (!archivo) return null
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+        <div className="modal-header">
+          <h3 className="modal-title"><IconExcel /> {archivo}</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p className="mock-note" style={{ marginBottom: '0.75rem' }}>
+            ⚠ Vista previa simulada. La IA que estructura y valida cada fila (HU-05) se conecta en el Sprint 2.
+          </p>
+          <div className="excel-preview-table">
+            <div className="excel-row excel-head">
+              <span>Pedido</span><span>Cliente</span><span>Teléfono</span>
+            </div>
+            {FILAS_MOCK_EXCEL.map((f, i) => (
+              <div key={i} className="excel-row">
+                <span>{f.nombre_pedido}</span><span>{f.nombre_cliente}</span><span>{f.telefono_cliente}</span>
+              </div>
+            ))}
+          </div>
+          <button className="btn-primary" disabled title="Disponible en Sprint 2">
+            Confirmar importación (Sprint 2) →
+          </button>
         </div>
       </div>
     </div>
@@ -61,7 +105,6 @@ export default function NuevoPedido() {
   const [archivoExcel, setArchivoExcel] = useState(null)
   const [pedidoDetalle, setPedidoDetalle] = useState(null)
   const inputExcelRef = useRef(null)
-  const navigate = useNavigate()
   const { user, rol } = useAuth()
 
   const cargarPedidos = useCallback(async () => {
@@ -101,28 +144,14 @@ export default function NuevoPedido() {
     cargarPedidos()
   }
 
-  async function cerrarSesion() {
-    await supabase.auth.signOut()
-    navigate('/')
-  }
-
   return (
     <div className="page-root">
-      <header className="page-header">
-        <div className="logo">🚚 AC <span>Express</span></div>
-        <div className="header-user">
-          <div className="user-info">
-            <span className="user-email">{user?.email}</span>
-            <span className="role-badge">{rol}</span>
-          </div>
-          <button className="btn-ghost" onClick={cerrarSesion}>Cerrar sesión</button>
-        </div>
-      </header>
+      <PageHeader user={user} rol={rol} titulo="Mis pedidos" />
 
       <div className="page-content">
 
         <div className="actions-bar">
-          <h2 className="card-title">Mis pedidos</h2>
+          <h2 className="card-title"><IconPackage /> Mis pedidos</h2>
           <div className="actions-btns">
             <input
               ref={inputExcelRef}
@@ -136,10 +165,10 @@ export default function NuevoPedido() {
               }}
             />
             <button className="btn-excel" onClick={() => inputExcelRef.current.click()}>
-              📊 {archivoExcel ? archivoExcel : 'Importar Excel'}
+              <IconExcel /> {archivoExcel ? archivoExcel : 'Importar Excel'}
             </button>
             <button className="btn-primary btn-sm" onClick={() => { setMostrarForm(v => !v); setMsg(null) }}>
-              {mostrarForm ? '✕ Cancelar' : '+ Nuevo pedido'}
+              {mostrarForm ? 'Cancelar' : '+ Nuevo pedido'}
             </button>
           </div>
         </div>
@@ -206,7 +235,7 @@ export default function NuevoPedido() {
 
         {pedidos.length === 0 ? (
           <div className="empty-state">
-            <p className="empty-icon">📦</p>
+            <p className="empty-icon"><IconPackage /></p>
             <p className="empty-title">Sin pedidos aún</p>
             <p className="empty-desc">Haz clic en "+ Nuevo pedido" para registrar tu primer envío.</p>
           </div>
@@ -225,10 +254,15 @@ export default function NuevoPedido() {
                   <span className={`estado-badge ${p.estado_entrega === 'Finalizado' ? 'ok' : 'pending'}`}>
                     {p.estado_entrega}
                   </span>
-                  <span className="ver-detalle" onClick={e => { e.stopPropagation(); setPedidoDetalle(p) }}>Ver →</span>
-                  <span className="ver-trazabilidad" onClick={e => e.stopPropagation()} title="Disponible en Sprint 3">
-                    📍 Trazabilidad
+                  <span className="ver-detalle" onClick={e => { e.stopPropagation(); setPedidoDetalle(p) }}>
+                    <IconEye /> Ver
                   </span>
+                  <a
+                    href={`/seguimiento/${p.id_pedido}`} target="_blank" rel="noreferrer"
+                    className="ver-trazabilidad" onClick={e => e.stopPropagation()}
+                  >
+                    <IconMapPin /> Trazabilidad
+                  </a>
                 </div>
               </div>
             ))}
@@ -237,6 +271,7 @@ export default function NuevoPedido() {
       </div>
 
       <DetallePedido pedido={pedidoDetalle} onClose={() => setPedidoDetalle(null)} />
+      <PreviewExcel archivo={archivoExcel} onClose={() => setArchivoExcel(null)} />
     </div>
   )
 }
