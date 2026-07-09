@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck } from '../components/Icons'
@@ -33,18 +33,27 @@ export default function Registro() {
   const [showConf, setShowConf] = useState(false)
   const [error, setError]       = useState(null)
   const [loading, setLoading]   = useState(false)
+  const enviandoRef = useRef(false) // bloqueo síncrono contra doble-clic/doble-submit
   const navigate = useNavigate()
 
   const onChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
   async function onSubmit(e) {
     e.preventDefault()
+    if (enviandoRef.current) return
+    enviandoRef.current = true
     setError(null)
 
-    if (form.password.length < 6)
-      return setError('La contraseña debe tener al menos 6 caracteres')
-    if (form.password !== form.confirmar)
-      return setError('Las contraseñas no coinciden')
+    if (form.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      enviandoRef.current = false
+      return
+    }
+    if (form.password !== form.confirmar) {
+      setError('Las contraseñas no coinciden')
+      enviandoRef.current = false
+      return
+    }
 
     setLoading(true)
 
@@ -56,6 +65,7 @@ export default function Registro() {
     if (authError) {
       setError(mensajeError(authError.message))
       setLoading(false)
+      enviandoRef.current = false
       return
     }
 
@@ -70,6 +80,7 @@ export default function Registro() {
     if (dbError) {
       setError(mensajeError(dbError.message))
       setLoading(false)
+      enviandoRef.current = false
       return
     }
 

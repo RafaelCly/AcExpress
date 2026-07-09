@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck } from '../components/Icons'
@@ -28,10 +28,13 @@ export default function Login() {
   const [showPass, setShowPass] = useState(false)
   const [error, setError]       = useState(null)
   const [loading, setLoading]   = useState(false)
+  const enviandoRef = useRef(false) // bloqueo síncrono contra doble-clic/doble-submit
   const navigate = useNavigate()
 
   async function onSubmit(e) {
     e.preventDefault()
+    if (enviandoRef.current) return
+    enviandoRef.current = true
     setError(null)
     setLoading(true)
 
@@ -41,6 +44,7 @@ export default function Login() {
     if (error) {
       setError('Correo o contraseña incorrectos')
       setLoading(false)
+      enviandoRef.current = false
       return
     }
 
