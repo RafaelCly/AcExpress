@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck } from '../components/Icons'
+import AuthVisual from '../components/AuthVisual'
 
 const RUTA_POR_ROL = {
   cliente:    '/pedidos',
@@ -78,16 +79,22 @@ export default function Login() {
 
   return (
     <div className="login-wrapper">
+      <AuthVisual />
+
+      <div className="auth-form-col">
       <form onSubmit={onSubmit} className="login-form" noValidate>
 
-        <div className="brand">
+        <div className="brand mobile-only-brand">
           <div className="brand-icon"><IconTruck /></div>
           <h1>AC <span>Express</span></h1>
         </div>
 
-        <p className="subtitle">
-          Ingresa tus credenciales para acceder al sistema de delivery.
-        </p>
+        <div>
+          <h2 className="form-title">Bienvenido de vuelta</h2>
+          <p className="subtitle">
+            Ingresa tus credenciales para acceder al sistema.
+          </p>
+        </div>
 
         <div className="divider" />
 
@@ -138,6 +145,7 @@ export default function Login() {
         </p>
 
       </form>
+      </div>
     </div>
   )
 }

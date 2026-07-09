@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import PageHeader from '../components/PageHeader'
+import AppShell from '../components/AppShell'
 import { IconPackage, IconCheck, IconWhatsapp, IconUsers } from '../components/Icons'
 
 function generarLinkSeguimiento(idPedido) {
@@ -93,10 +93,7 @@ export default function Acopio() {
   }
 
   return (
-    <div className="page-root">
-      <PageHeader user={user} rol={rol} titulo="Acopio" />
-
-      <div className="page-content page-content-wide">
+    <AppShell user={user} rol={rol} titulo="Acopio">
         <div className="actions-bar">
           <h2 className="card-title"><IconPackage /> Pedidos en almacén</h2>
           <div className="tabs">
@@ -138,7 +135,6 @@ export default function Acopio() {
             ))}
           </div>
         )}
-      </div>
 
       <ModalListo
         pedido={modalPedido}
@@ -146,6 +142,6 @@ export default function Acopio() {
         onClose={() => setModalPedido(null)}
         onConfirmar={confirmarListo}
       />
-    </div>
+    </AppShell>
   )
 }

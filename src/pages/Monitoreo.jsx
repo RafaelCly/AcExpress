@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import PageHeader from '../components/PageHeader'
+import AppShell from '../components/AppShell'
 import { IconRadio, IconMapPin, IconAlert, IconWhatsapp, IconClock } from '../components/Icons'
 
 // Genera una posición pseudo-aleatoria pero estable (basada en el id) para el mock de mapa GPS.
@@ -88,10 +88,7 @@ export default function Monitoreo() {
   const incidentes = pedidos.filter(p => p.estado_entrega === 'En incidente')
 
   return (
-    <div className="page-root">
-      <PageHeader user={user} rol={rol} titulo="Monitoreo" />
-
-      <div className="page-content page-content-wide">
+    <AppShell user={user} rol={rol} titulo="Monitoreo">
         <div className="actions-bar">
           <h2 className="card-title"><IconRadio /> Repartidores en tiempo real</h2>
           <span className="badge">{enRuta.length} en ruta · {incidentes.length} con incidente</span>
@@ -148,13 +145,12 @@ export default function Monitoreo() {
             ))}
           </div>
         )}
-      </div>
 
       <ModalIncidente
         pedido={modalIncidente}
         onClose={() => setModalIncidente(null)}
         onConfirmar={confirmarIncidente}
       />
-    </div>
+    </AppShell>
   )
 }

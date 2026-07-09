@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import PageHeader from '../components/PageHeader'
+import AppShell from '../components/AppShell'
 import { IconRoute, IconMapPin, IconCheck, IconClock } from '../components/Icons'
 
 const SIGUIENTE_ESTADO = {
@@ -43,10 +43,7 @@ export default function Ruta() {
   }
 
   return (
-    <div className="page-root">
-      <PageHeader user={user} rol={rol} titulo="Mi ruta" />
-
-      <div className="page-content page-content-wide">
+    <AppShell user={user} rol={rol} titulo="Mi ruta">
         <div className="actions-bar">
           <h2 className="card-title"><IconRoute /> Pedidos asignados hoy</h2>
         </div>
@@ -91,7 +88,6 @@ export default function Ruta() {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </AppShell>
   )
 }

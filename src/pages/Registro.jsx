@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck } from '../components/Icons'
+import AuthVisual from '../components/AuthVisual'
 
 const EyeIcon = ({ open }) => open ? (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -102,8 +103,10 @@ export default function Registro() {
   if (emailEnviado) {
     return (
       <div className="login-wrapper">
+        <AuthVisual />
+        <div className="auth-form-col">
         <div className="login-form" style={{ textAlign: 'center' }}>
-          <div className="brand" style={{ justifyContent: 'center' }}>
+          <div className="brand mobile-only-brand" style={{ justifyContent: 'center' }}>
             <div className="brand-icon"><IconTruck /></div>
             <h1>AC <span>Express</span></h1>
           </div>
@@ -115,20 +118,27 @@ export default function Registro() {
             ¿Ya confirmaste? <Link to="/" className="link">Inicia sesión</Link>
           </p>
         </div>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="login-wrapper">
+      <AuthVisual />
+
+      <div className="auth-form-col">
       <form onSubmit={onSubmit} className="login-form" noValidate>
 
-        <div className="brand">
+        <div className="brand mobile-only-brand">
           <div className="brand-icon"><IconTruck /></div>
           <h1>AC <span>Express</span></h1>
         </div>
 
-        <p className="subtitle">Crea tu cuenta para acceder al sistema.</p>
+        <div>
+          <h2 className="form-title">Crea tu cuenta</h2>
+          <p className="subtitle">Regístrate para empezar a registrar y rastrear pedidos.</p>
+        </div>
 
         <div className="divider" />
 
@@ -183,6 +193,7 @@ export default function Registro() {
         </p>
 
       </form>
+      </div>
     </div>
   )
 }

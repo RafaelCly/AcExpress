@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import PageHeader from '../components/PageHeader'
+import AppShell from '../components/AppShell'
 import { IconPackage, IconExcel, IconMapPin, IconEye } from '../components/Icons'
 
 const VACIO = {
@@ -145,13 +145,10 @@ export default function NuevoPedido() {
   }
 
   return (
-    <div className="page-root">
-      <PageHeader user={user} rol={rol} titulo="Mis pedidos" />
-
-      <div className="page-content">
+    <AppShell user={user} rol={rol} titulo="Mis pedidos">
 
         <div className="actions-bar">
-          <h2 className="card-title"><IconPackage /> Mis pedidos</h2>
+          <h2 className="card-title"><IconPackage /> {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''}</h2>
           <div className="actions-btns">
             <input
               ref={inputExcelRef}
@@ -268,10 +265,9 @@ export default function NuevoPedido() {
             ))}
           </div>
         )}
-      </div>
 
       <DetallePedido pedido={pedidoDetalle} onClose={() => setPedidoDetalle(null)} />
       <PreviewExcel archivo={archivoExcel} onClose={() => setArchivoExcel(null)} />
-    </div>
+    </AppShell>
   )
 }
