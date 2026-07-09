@@ -54,9 +54,24 @@ export default function Login() {
       refresh_token: data.session.refresh_token,
     })
 
-    const { data: perfil } = await supabase
+    let { data: perfil } = await supabase
       .from('clientes').select('rol')
       .eq('id_cliente', data.user.id).single()
+
+    // Primer login tras confirmar el correo: el registro no pudo crear el
+    // perfil porque signUp() no entrega sesión hasta confirmar. Se crea aquí.
+    if (!perfil) {
+      const { data: nuevoPerfil } = await supabase.from('clientes')
+        .insert({
+          id_cliente:   data.user.id,
+          login:        data.user.email,
+          email:        data.user.email,
+          razon_social: data.user.user_metadata?.razon_social ?? null,
+          rol:          'cliente',
+        })
+        .select('rol').single()
+      perfil = nuevoPerfil
+    }
 
     navigate(RUTA_POR_ROL[perfil?.rol] ?? '/pedidos')
   }

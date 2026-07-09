@@ -33,6 +33,7 @@ export default function Registro() {
   const [showConf, setShowConf] = useState(false)
   const [error, setError]       = useState(null)
   const [loading, setLoading]   = useState(false)
+  const [emailEnviado, setEmailEnviado] = useState(false)
   const enviandoRef = useRef(false) // bloqueo síncrono contra doble-clic/doble-submit
   const navigate = useNavigate()
 
@@ -60,12 +61,23 @@ export default function Registro() {
     const { data, error: authError } = await supabase.auth.signUp({
       email:    form.email,
       password: form.password,
+      options:  { data: { razon_social: form.razon_social || null } },
     })
 
     if (authError) {
       setError(mensajeError(authError.message))
       setLoading(false)
       enviandoRef.current = false
+      return
+    }
+
+    // Si Supabase exige confirmar el correo, signUp() no entrega sesión activa
+    // todavía: no hay forma de insertar en "clientes" (RLS bloquea sin auth.uid()).
+    // El perfil se completa en el primer login (ver Login.jsx).
+    if (!data.session) {
+      setLoading(false)
+      setError(null)
+      setEmailEnviado(true)
       return
     }
 
@@ -85,6 +97,26 @@ export default function Registro() {
     }
 
     navigate('/pedidos')
+  }
+
+  if (emailEnviado) {
+    return (
+      <div className="login-wrapper">
+        <div className="login-form" style={{ textAlign: 'center' }}>
+          <div className="brand" style={{ justifyContent: 'center' }}>
+            <div className="brand-icon"><IconTruck /></div>
+            <h1>AC <span>Express</span></h1>
+          </div>
+          <p className="subtitle">
+            Te enviamos un correo a <b style={{ color: 'var(--text-main)' }}>{form.email}</b> para confirmar tu cuenta.
+            Ábrelo y haz clic en el enlace para poder iniciar sesión.
+          </p>
+          <p className="form-footer">
+            ¿Ya confirmaste? <Link to="/" className="link">Inicia sesión</Link>
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
