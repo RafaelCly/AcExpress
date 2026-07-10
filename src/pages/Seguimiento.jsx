@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck, IconCheck, IconClock, IconAlert, IconPackage } from '../components/Icons'
+import MapaSeguimientoCliente from '../components/MapaSeguimientoCliente'
 
 const PASOS = [
   { key: 'registrado', label: 'Pedido registrado' },
@@ -22,13 +23,22 @@ export default function Seguimiento() {
   const [pedido, setPedido] = useState(undefined)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     supabase.from('seguimiento_publico').select('*').eq('id_pedido', id).single()
       .then(({ data, error }) => {
         if (error || !data) { setError(true); return }
         setPedido(data)
       })
   }, [id])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  // Mientras el pedido está en camino, refresca la posición del repartidor cada 8s
+  useEffect(() => {
+    if (pedido?.estado_entrega !== 'En transcurso') return
+    const intervalo = setInterval(cargar, 8000)
+    return () => clearInterval(intervalo)
+  }, [pedido?.estado_entrega, cargar])
 
   if (pedido === undefined && !error) {
     return <div className="login-wrapper"><p className="subtitle">Cargando seguimiento...</p></div>
@@ -69,6 +79,13 @@ export default function Seguimiento() {
         {incidente && (
           <p className="msg error"><IconAlert /> Hubo una demora con tu pedido. Nuestro equipo ya está al tanto.</p>
         )}
+
+        <MapaSeguimientoCliente
+          repartidorLat={pedido.repartidor_lat}
+          repartidorLng={pedido.repartidor_lng}
+          destinoLat={pedido.destino_lat}
+          destinoLng={pedido.destino_lng}
+        />
 
         <div className="timeline">
           {PASOS.map((paso, i) => {

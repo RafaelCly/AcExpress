@@ -62,6 +62,22 @@ async function interpretarRespuesta(texto) {
   }
 }
 
+// Geocodifica una dirección de texto a lat/lng usando Nominatim (OpenStreetMap, gratis).
+// Nominatim exige un User-Agent descriptivo y máximo ~1 request/seg (uso justo).
+async function geocodificar(direccion) {
+  if (!direccion) return null
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?` +
+      `q=${encodeURIComponent(direccion + ', Peru')}&format=json&limit=1&countrycodes=pe`
+    const r = await fetch(url, { headers: { 'User-Agent': 'ACExpress/1.0 (contacto@acexpress.com)' } })
+    const data = await r.json()
+    if (!data?.[0]) return null
+    return { lat: Number(data[0].lat), lng: Number(data[0].lon) }
+  } catch {
+    return null
+  }
+}
+
 async function buscarRepartidorDisponible(horaTexto) {
   if (!horaTexto) return null
 
@@ -144,10 +160,14 @@ export default async function handler(req, res) {
       return
     }
 
+    const coords = await geocodificar(interpretado.ubicacion)
+
     await supabase.from('pedidos').update({
       ubicacion_destino_cliente: interpretado.ubicacion || texto,
       dia_entrega: interpretado.fecha || null,
       hora_entrega: interpretado.hora || null,
+      destino_lat: coords?.lat ?? null,
+      destino_lng: coords?.lng ?? null,
     }).eq('id_pedido', pedido.id_pedido)
 
     const idRepartidor = await buscarRepartidorDisponible(interpretado.hora)
