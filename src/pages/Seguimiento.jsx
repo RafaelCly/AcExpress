@@ -41,12 +41,12 @@ export default function Seguimiento() {
   }, [pedido?.estado_entrega, cargar])
 
   if (pedido === undefined && !error) {
-    return <div className="login-wrapper"><p className="subtitle">Cargando seguimiento...</p></div>
+    return <div className="public-page-wrapper"><p className="subtitle">Cargando seguimiento...</p></div>
   }
 
   if (error || !pedido) {
     return (
-      <div className="login-wrapper">
+      <div className="public-page-wrapper">
         <div className="login-form" style={{ textAlign: 'center' }}>
           <div className="brand" style={{ justifyContent: 'center' }}>
             <div className="brand-icon"><IconTruck /></div>
@@ -62,7 +62,7 @@ export default function Seguimiento() {
   const incidente = pedido.estado_entrega === 'En incidente'
 
   return (
-    <div className="login-wrapper">
+    <div className="public-page-wrapper">
       <div className="login-form" style={{ maxWidth: 460 }}>
         <div className="brand">
           <div className="brand-icon"><IconTruck /></div>

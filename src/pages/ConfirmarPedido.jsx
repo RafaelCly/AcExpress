@@ -32,7 +32,7 @@ export default function ConfirmarPedido() {
   }
 
   return (
-    <div className="login-wrapper">
+    <div className="public-page-wrapper">
       <div className="login-form" style={{ maxWidth: 460 }}>
         <div className="brand">
           <div className="brand-icon"><IconTruck /></div>
