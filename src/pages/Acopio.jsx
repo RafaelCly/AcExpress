@@ -9,9 +9,14 @@ function generarLinkSeguimiento(idPedido) {
   return `${window.location.origin}/seguimiento/${idPedido}`
 }
 
+function generarLinkConfirmacion(idPedido) {
+  return `${window.location.origin}/confirmar/${idPedido}`
+}
+
 function mensajePreguntaUbicacion(pedido) {
+  const link = generarLinkConfirmacion(pedido.id_pedido)
   return `Hola ${pedido.nombre_cliente}, tu pedido "${pedido.nombre_pedido}" ya está listo en almacén. ` +
-    `Responde con tu ubicación de entrega y el día/hora en que esperas recibirlo (ej. "Miraflores, jueves 3pm").`
+    `Confirma tu dirección y el día/hora de entrega en este enlace: ${link}`
 }
 
 function mensajeAsignado(pedido, link) {
@@ -44,10 +49,10 @@ function ModalListo({ pedido, onClose, onConfirmar }) {
             </div>
             <div className="whatsapp-bubble">
               Hola {pedido.nombre_cliente} 👋 tu pedido <b>{pedido.nombre_pedido}</b> ya está listo en almacén.
-              Responde con tu <b>ubicación de entrega</b> y el <b>día/hora</b> en que esperas recibirlo.
+              Confirma tu <b>dirección</b> y el <b>día/hora</b> de entrega en este enlace: acexpress.com/confirmar/...
             </div>
             <p className="mock-note">
-              Cuando el cliente responda, una IA interpreta su mensaje, guarda ubicación/fecha/hora y busca
+              Cuando el cliente llena el formulario, el sistema guarda su dirección/fecha/hora exactas y busca
               automáticamente un repartidor libre a esa hora. Si no hay ninguno, aparecerá abajo en
               "Sin repartidor" para asignarlo tú manualmente.
             </p>

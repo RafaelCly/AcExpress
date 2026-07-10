@@ -7,6 +7,7 @@ import Ruta         from './pages/Ruta'
 import Monitoreo    from './pages/Monitoreo'
 import Admin        from './pages/Admin'
 import Seguimiento  from './pages/Seguimiento'
+import ConfirmarPedido from './pages/ConfirmarPedido'
 import RutaProtegida from './components/RutaProtegida'
 
 function SinAcceso() {
@@ -25,6 +26,7 @@ export default function App() {
       <Route path="/" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/seguimiento/:id" element={<Seguimiento />} />
+      <Route path="/confirmar/:id" element={<ConfirmarPedido />} />
 
       {/* HU-01/03/04/05: cliente registra e importa pedidos */}
       <Route path="/pedidos" element={
