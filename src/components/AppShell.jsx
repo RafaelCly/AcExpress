@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import {
   IconTruck, IconLogOut, IconPackage, IconUsers, IconRoute,
@@ -15,12 +15,23 @@ const ROL_LABEL = {
 }
 
 const NAV_ITEMS = [
-  { to: '/pedidos',   label: 'Mis pedidos', icon: IconPackage, roles: ['cliente', 'admin'] },
-  { to: '/acopio',    label: 'Acopio',      icon: IconUsers,   roles: ['acopio', 'admin'] },
-  { to: '/ruta',      label: 'Mi ruta',     icon: IconRoute,   roles: ['repartidor', 'admin'] },
-  { to: '/monitoreo', label: 'Monitoreo',   icon: IconRadio,   roles: ['central', 'admin'] },
-  { to: '/admin',     label: 'Admin',       icon: IconAdmin,   roles: ['admin'] },
+  { to: '/pedidos',   label: 'Mis pedidos', icon: IconPackage, roles: ['cliente', 'admin'], modulo: 'cliente' },
+  { to: '/acopio',    label: 'Acopio',      icon: IconUsers,   roles: ['acopio', 'admin'],  modulo: 'acopio' },
+  { to: '/ruta',      label: 'Mi ruta',     icon: IconRoute,   roles: ['repartidor', 'admin'], modulo: 'ruta' },
+  { to: '/monitoreo', label: 'Monitoreo',   icon: IconRadio,   roles: ['central', 'admin'], modulo: 'monitoreo' },
+  { to: '/admin',     label: 'Admin',       icon: IconAdmin,   roles: ['admin'], modulo: 'admin' },
 ]
+
+// Cada módulo tiene su propio acento validado (color domain de ui-ux-pro-max)
+// manteniendo el mismo lenguaje visual base — así diferencian secciones
+// productos reales como Vercel o GitHub sin perder coherencia de marca.
+const MODULO_ACCENT = {
+  cliente:    'cliente',
+  acopio:     'acopio',
+  ruta:       'ruta',
+  monitoreo:  'monitoreo',
+  admin:      'admin',
+}
 
 function iniciales(email) {
   if (!email) return '?'
@@ -30,7 +41,11 @@ function iniciales(email) {
 export default function AppShell({ user, rol, titulo, children }) {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const items = NAV_ITEMS.filter(i => i.roles.includes(rol))
+
+  const activo = NAV_ITEMS.find(i => location.pathname.startsWith(i.to))
+  const acento = MODULO_ACCENT[activo?.modulo] ?? 'cliente'
 
   async function cerrarSesion() {
     await supabase.auth.signOut()
@@ -38,7 +53,7 @@ export default function AppShell({ user, rol, titulo, children }) {
   }
 
   return (
-    <div className="shell">
+    <div className={`shell shell-${acento}`}>
       <button className="shell-menu-btn" onClick={() => setMenuAbierto(v => !v)} aria-label="Abrir menú">
         <IconChevronRight />
       </button>
@@ -53,7 +68,7 @@ export default function AppShell({ user, rol, titulo, children }) {
           {items.map(item => (
             <NavLink
               key={item.to} to={item.to}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => `sidebar-link sidebar-link-${item.modulo} ${isActive ? 'active' : ''}`}
               onClick={() => setMenuAbierto(false)}
             >
               <item.icon />
@@ -81,6 +96,8 @@ export default function AppShell({ user, rol, titulo, children }) {
       <div className="shell-main">
         {titulo && (
           <div className="shell-topbar">
+            {activo && <span className="shell-watermark"><activo.icon /></span>}
+            <span className="module-dot" />
             <h1 className="shell-title">{titulo}</h1>
           </div>
         )}
