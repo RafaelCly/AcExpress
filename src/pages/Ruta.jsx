@@ -14,6 +14,7 @@ function TarjetaHorario({ userId }) {
   const [fin, setFin] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [guardado, setGuardado] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!userId) return
@@ -26,10 +27,12 @@ function TarjetaHorario({ userId }) {
 
   async function guardar() {
     setGuardando(true)
-    await supabase.from('clientes')
+    setError(null)
+    const { error: err } = await supabase.from('clientes')
       .update({ horario_inicio: inicio || null, horario_fin: fin || null })
       .eq('id_cliente', userId)
     setGuardando(false)
+    if (err) { setError(err.message); return }
     setGuardado(true)
     setTimeout(() => setGuardado(false), 2500)
   }
@@ -53,6 +56,7 @@ function TarjetaHorario({ userId }) {
       <button className="btn-primary btn-sm" style={{ marginTop: '0.85rem' }} disabled={guardando} onClick={guardar}>
         {guardando ? 'Guardando...' : guardado ? '✓ Guardado' : 'Guardar horario'}
       </button>
+      {error && <p className="msg error" style={{ marginTop: '0.75rem' }}>⚠ {error}</p>}
     </div>
   )
 }
