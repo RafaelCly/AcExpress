@@ -36,7 +36,11 @@ export function validarFilaPedido(fila) {
  * cada una con su resultado de validación (fila.error === null si es válida).
  */
 export async function parsearExcelPedidos(file) {
-  const filas = await readXlsxFile(file)
+  // read-excel-file 9.x devuelve un array de hojas [{ sheet, data }]; tomamos
+  // las filas de la primera hoja (la plantilla solo tiene una: "Pedidos").
+  const hojas = await readXlsxFile(file)
+  const filas = hojas?.[0]?.data ?? []
+
   if (!filas || filas.length < 2) {
     return { pedidos: [], columnasFaltantes: ['nombre_pedido', 'nombre_cliente', 'telefono_cliente'] }
   }
