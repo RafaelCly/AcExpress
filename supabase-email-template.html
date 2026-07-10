@@ -1,0 +1,51 @@
+<!--
+  Plantilla de correo "Confirm signup" para AC Express.
+  Cómo instalarla:
+  1. Ve a tu proyecto en Supabase -> Authentication -> Email Templates
+  2. Selecciona la plantilla "Confirm signup"
+  3. Borra el contenido del cuadro "Message body" y pega TODO este HTML
+  4. Guarda ({{ .ConfirmationURL }} es una variable de Supabase, no la borres)
+-->
+<div style="background:#050608;padding:40px 20px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;margin:0 auto;">
+    <tr>
+      <td style="background:linear-gradient(135deg,#1d4ed8,#5e6ad2);border-radius:16px 16px 0 0;padding:28px 32px;text-align:center;">
+        <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+          AC <span style="color:#c7d2fe;">Express</span>
+        </span>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0e1116;border:1px solid #1e2530;border-top:none;border-radius:0 0 16px 16px;padding:36px 32px;">
+        <h1 style="margin:0 0 12px;font-size:20px;font-weight:800;color:#f4f6fb;">
+          Confirma tu cuenta
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#9398a8;">
+          Gracias por registrarte en AC Express. Haz clic en el botón de abajo para confirmar
+          tu correo y activar tu cuenta.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+          <tr>
+            <td style="border-radius:8px;background:linear-gradient(135deg,#1d4ed8,#2563eb);">
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:700;
+                        color:#ffffff;text-decoration:none;border-radius:8px;">
+                Confirmar mi cuenta →
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:0 0 8px;font-size:12px;color:#676d7d;">
+          Si el botón no funciona, copia y pega este enlace en tu navegador:
+        </p>
+        <p style="margin:0;font-size:12px;color:#60a5fa;word-break:break-all;">
+          {{ .ConfirmationURL }}
+        </p>
+        <hr style="border:none;border-top:1px solid #1e2530;margin:28px 0;">
+        <p style="margin:0;font-size:11px;color:#676d7d;">
+          Si no creaste esta cuenta, puedes ignorar este correo.
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>

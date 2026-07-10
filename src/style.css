@@ -881,6 +881,40 @@ button, a, [role="button"] { cursor: pointer; }
 }
 .eye-btn:hover { color: var(--text-mute); background: transparent; }
 
+/* ═══════════════ Password strength meter ═══════════════ */
+.password-strength { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+.password-strength-track { display: flex; gap: 4px; }
+.password-strength-seg {
+  flex: 1; height: 4px; border-radius: 100px;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.25s var(--ease-out);
+}
+
+.password-strength-label { font-size: 0.75rem; font-weight: 700; }
+
+.password-criterios {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+.password-criterios li {
+  font-size: 0.7rem;
+  color: var(--text-hint);
+  position: relative;
+  padding-left: 0.95rem;
+}
+.password-criterios li::before {
+  content: '';
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  transition: background var(--transition);
+}
+.password-criterios li.ok { color: var(--success); }
+.password-criterios li.ok::before { background: var(--success); }
+
 /* ═══════════════ Form footer link ═══════════════ */
 .form-footer { text-align: center; font-size: 0.875rem; color: var(--text-mute); }
 .link { color: var(--indigo-400); text-decoration: none; font-weight: 600; }

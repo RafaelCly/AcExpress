@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTruck } from '../components/Icons'
 import AuthVisual from '../components/AuthVisual'
+import { evaluarPassword } from '../lib/passwordStrength'
 
 const EyeIcon = ({ open }) => open ? (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -46,8 +47,8 @@ export default function Registro() {
     enviandoRef.current = true
     setError(null)
 
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    if (!evaluarPassword(form.password).cumpleMinimo) {
+      setError('La contraseña debe tener 8+ caracteres, mayúscula, minúscula y número')
       enviandoRef.current = false
       return
     }
@@ -161,12 +162,38 @@ export default function Registro() {
           <div className="input-eye">
             <input id="password" name="password"
               type={showPass ? 'text' : 'password'}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               value={form.password} onChange={onChange} required />
             <button type="button" className="eye-btn" onClick={() => setShowPass(v => !v)}>
               <EyeIcon open={showPass} />
             </button>
           </div>
+
+          {form.password && (() => {
+            const fortaleza = evaluarPassword(form.password)
+            return (
+              <div className="password-strength">
+                <div className="password-strength-track">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <div
+                      key={i}
+                      className="password-strength-seg"
+                      style={{ background: i <= fortaleza.puntaje ? fortaleza.color : undefined }}
+                    />
+                  ))}
+                </div>
+                <span className="password-strength-label" style={{ color: fortaleza.color }}>
+                  {fortaleza.etiqueta}
+                </span>
+                <ul className="password-criterios">
+                  <li className={fortaleza.criterios.longitud ? 'ok' : ''}>8+ caracteres</li>
+                  <li className={fortaleza.criterios.mayuscula ? 'ok' : ''}>Mayúscula</li>
+                  <li className={fortaleza.criterios.minuscula ? 'ok' : ''}>Minúscula</li>
+                  <li className={fortaleza.criterios.numero ? 'ok' : ''}>Número</li>
+                </ul>
+              </div>
+            )
+          })()}
         </div>
 
         <div className="field">
