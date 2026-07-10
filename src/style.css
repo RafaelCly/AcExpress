@@ -123,6 +123,25 @@ button, a, [role="button"] { cursor: pointer; }
     var(--navy-950);
 }
 
+/* ─── Seguimiento con mapa: info a la izquierda, mapa grande a la derecha ─── */
+.seguimiento-layout {
+  width: 100%;
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .seguimiento-layout { grid-template-columns: 1fr; max-width: 460px; }
+}
+.seguimiento-layout .login-form { max-width: none; height: fit-content; }
+.seguimiento-mapa-col { min-height: 420px; }
+.seguimiento-mapa-col .map-mock { height: 100%; }
+@media (max-width: 860px) {
+  .seguimiento-mapa-col { min-height: 320px; }
+}
+
 /* ═══════════════ AUTH (Login / Registro) — split screen ═══════════════ */
 .login-wrapper {
   flex: 1;

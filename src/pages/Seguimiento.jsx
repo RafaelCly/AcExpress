@@ -60,53 +60,75 @@ export default function Seguimiento() {
 
   const pasoActual = calcularPaso(pedido)
   const incidente = pedido.estado_entrega === 'En incidente'
+  const hayMapa = pedido.destino_lat != null && pedido.destino_lng != null
 
-  return (
-    <div className="public-page-wrapper">
-      <div className="login-form" style={{ maxWidth: 460 }}>
-        <div className="brand">
-          <div className="brand-icon"><IconTruck /></div>
-          <h1>AC <span>Express</span></h1>
-        </div>
-        <p className="subtitle">Seguimiento de tu pedido</p>
-        <div className="divider" />
+  const info = (
+    <div className="login-form" style={{ maxWidth: hayMapa ? 'none' : 460 }}>
+      <div className="brand">
+        <div className="brand-icon"><IconTruck /></div>
+        <h1>AC <span>Express</span></h1>
+      </div>
+      <p className="subtitle">Seguimiento de tu pedido</p>
+      <div className="divider" />
 
-        <div className="seguimiento-pedido">
-          <span className="seguimiento-nombre"><IconPackage /> {pedido.nombre_pedido}</span>
-          <span className="seguimiento-cliente">{pedido.nombre_cliente}</span>
-        </div>
+      <div className="seguimiento-pedido">
+        <span className="seguimiento-nombre"><IconPackage /> {pedido.nombre_pedido}</span>
+        <span className="seguimiento-cliente">{pedido.nombre_cliente}</span>
+      </div>
 
-        {incidente && (
-          <p className="msg error"><IconAlert /> Hubo una demora con tu pedido. Nuestro equipo ya está al tanto.</p>
-        )}
+      {incidente && (
+        <p className="msg error"><IconAlert /> Hubo una demora con tu pedido. Nuestro equipo ya está al tanto.</p>
+      )}
 
+      {!hayMapa && (
         <MapaSeguimientoCliente
           repartidorLat={pedido.repartidor_lat}
           repartidorLng={pedido.repartidor_lng}
           destinoLat={pedido.destino_lat}
           destinoLng={pedido.destino_lng}
         />
+      )}
 
-        <div className="timeline">
-          {PASOS.map((paso, i) => {
-            const activo = i <= pasoActual
-            const actual  = i === pasoActual
-            return (
-              <div key={paso.key} className={`timeline-step ${activo ? 'activo' : ''} ${actual ? 'actual' : ''}`}>
-                <span className="timeline-dot">{activo ? <IconCheck /> : <IconClock />}</span>
-                <span className="timeline-label">{paso.label}</span>
-              </div>
-            )
-          })}
+      <div className="timeline">
+        {PASOS.map((paso, i) => {
+          const activo = i <= pasoActual
+          const actual  = i === pasoActual
+          return (
+            <div key={paso.key} className={`timeline-step ${activo ? 'activo' : ''} ${actual ? 'actual' : ''}`}>
+              <span className="timeline-dot">{activo ? <IconCheck /> : <IconClock />}</span>
+              <span className="timeline-label">{paso.label}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {pedido.dia_entrega && (
+        <p className="msg ok">Fecha de entrega estimada: {pedido.dia_entrega}</p>
+      )}
+
+      <p className="form-footer">
+        ¿Eres cliente de AC Express? <Link to="/" className="link">Inicia sesión</Link>
+      </p>
+    </div>
+  )
+
+  if (!hayMapa) {
+    return <div className="public-page-wrapper">{info}</div>
+  }
+
+  return (
+    <div className="public-page-wrapper">
+      <div className="seguimiento-layout">
+        {info}
+        <div className="seguimiento-mapa-col">
+          <MapaSeguimientoCliente
+            repartidorLat={pedido.repartidor_lat}
+            repartidorLng={pedido.repartidor_lng}
+            destinoLat={pedido.destino_lat}
+            destinoLng={pedido.destino_lng}
+            alto="100%"
+          />
         </div>
-
-        {pedido.dia_entrega && (
-          <p className="msg ok">Fecha de entrega estimada: {pedido.dia_entrega}</p>
-        )}
-
-        <p className="form-footer">
-          ¿Eres cliente de AC Express? <Link to="/" className="link">Inicia sesión</Link>
-        </p>
       </div>
     </div>
   )

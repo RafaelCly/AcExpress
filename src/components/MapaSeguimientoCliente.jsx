@@ -36,7 +36,7 @@ async function obtenerRuta(origen, destino) {
   }
 }
 
-export default function MapaSeguimientoCliente({ repartidorLat, repartidorLng, destinoLat, destinoLng }) {
+export default function MapaSeguimientoCliente({ repartidorLat, repartidorLng, destinoLat, destinoLng, alto = 220 }) {
   const [ruta, setRuta] = useState(null)
 
   const hayRepartidor = repartidorLat != null && repartidorLng != null
@@ -55,12 +55,12 @@ export default function MapaSeguimientoCliente({ repartidorLat, repartidorLng, d
   const centro = hayRepartidor ? [repartidorLat, repartidorLng] : [destinoLat, destinoLng]
 
   return (
-    <div className="map-mock" style={{ marginBottom: '1rem' }}>
+    <div className="map-mock" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <p className="map-mock-label">
         <IconMapPin /> {hayRepartidor ? 'Tu repartidor en tiempo real' : 'Tu dirección de entrega'}
       </p>
-      <div className="map-real-wrap">
-        <MapContainer center={centro} zoom={14} scrollWheelZoom={false} style={{ height: '220px', width: '100%' }}>
+      <div className="map-real-wrap" style={{ flex: 1 }}>
+        <MapContainer center={centro} zoom={14} scrollWheelZoom={false} style={{ height: typeof alto === 'number' ? `${alto}px` : alto, width: '100%' }}>
           <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           <Marker position={[destinoLat, destinoLng]} icon={ICONO_DESTINO}>
