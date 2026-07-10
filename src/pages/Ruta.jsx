@@ -9,6 +9,54 @@ const SIGUIENTE_ESTADO = {
   'En transcurso':{ label: 'Marcar entregado',    next: 'Finalizado' },
 }
 
+function TarjetaHorario({ userId }) {
+  const [inicio, setInicio] = useState('')
+  const [fin, setFin] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [guardado, setGuardado] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    supabase.from('clientes').select('horario_inicio, horario_fin').eq('id_cliente', userId).single()
+      .then(({ data }) => {
+        if (data?.horario_inicio) setInicio(data.horario_inicio.slice(0, 5))
+        if (data?.horario_fin)    setFin(data.horario_fin.slice(0, 5))
+      })
+  }, [userId])
+
+  async function guardar() {
+    setGuardando(true)
+    await supabase.from('clientes')
+      .update({ horario_inicio: inicio || null, horario_fin: fin || null })
+      .eq('id_cliente', userId)
+    setGuardando(false)
+    setGuardado(true)
+    setTimeout(() => setGuardado(false), 2500)
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: '1.25rem', padding: '1.25rem 1.5rem' }}>
+      <h3 className="card-title" style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}><IconClock /> Mi horario de trabajo</h3>
+      <p className="card-subtitle" style={{ marginBottom: '1rem' }}>
+        Se usa para asignarte pedidos automáticamente según la hora que pida el cliente.
+      </p>
+      <div className="form-row">
+        <div className="field">
+          <label>Desde</label>
+          <input type="time" value={inicio} onChange={e => setInicio(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Hasta</label>
+          <input type="time" value={fin} onChange={e => setFin(e.target.value)} />
+        </div>
+      </div>
+      <button className="btn-primary btn-sm" style={{ marginTop: '0.85rem' }} disabled={guardando} onClick={guardar}>
+        {guardando ? 'Guardando...' : guardado ? '✓ Guardado' : 'Guardar horario'}
+      </button>
+    </div>
+  )
+}
+
 export default function Ruta() {
   const { user, rol } = useAuth()
   const [pedidos, setPedidos] = useState([])
@@ -84,6 +132,8 @@ export default function Ruta() {
 
   return (
     <AppShell user={user} rol={rol} titulo="Mi ruta">
+        <TarjetaHorario userId={user?.id} />
+
         <div className="actions-bar">
           <h2 className="card-title"><IconRoute /> Pedidos asignados hoy</h2>
           {gpsActivo && (

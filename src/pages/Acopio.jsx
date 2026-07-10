@@ -3,27 +3,29 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
 import { enviarWhatsapp } from '../lib/whatsapp'
-import { IconPackage, IconCheck, IconWhatsapp, IconUsers } from '../components/Icons'
+import { IconPackage, IconCheck, IconWhatsapp, IconUsers, IconAlert } from '../components/Icons'
 
 function generarLinkSeguimiento(idPedido) {
   return `${window.location.origin}/seguimiento/${idPedido}`
 }
 
-function mensajeListo(pedido, link) {
+function mensajePreguntaUbicacion(pedido) {
   return `Hola ${pedido.nombre_cliente}, tu pedido "${pedido.nombre_pedido}" ya está listo en almacén. ` +
-    `Responde con tu ubicación y día de entrega preferido. Sigue tu pedido aquí: ${link}`
+    `Responde con tu ubicación de entrega y el día/hora en que esperas recibirlo (ej. "Miraflores, jueves 3pm").`
 }
 
-function ModalListo({ pedido, repartidores, onClose, onConfirmar }) {
-  const [idRepartidor, setIdRepartidor] = useState('')
+function mensajeAsignado(pedido, link) {
+  return `¡Gracias! Tu pedido "${pedido.nombre_pedido}" fue asignado a un repartidor. ` +
+    `Sigue tu entrega en tiempo real aquí: ${link}`
+}
+
+function ModalListo({ pedido, onClose, onConfirmar }) {
   const [enviando, setEnviando] = useState(false)
   if (!pedido) return null
 
-  const link = generarLinkSeguimiento(pedido.id_pedido)
-
   async function confirmar() {
     setEnviando(true)
-    await onConfirmar(pedido.id_pedido, idRepartidor || null)
+    await onConfirmar(pedido.id_pedido)
     setEnviando(false)
   }
 
@@ -36,34 +38,66 @@ function ModalListo({ pedido, repartidores, onClose, onConfirmar }) {
         </div>
         <div className="modal-body">
 
-          <div className="field">
-            <label>Asignar repartidor (opcional)</label>
-            <select className="select-input" value={idRepartidor} onChange={e => setIdRepartidor(e.target.value)}>
-              <option value="">Sin asignar por ahora</option>
-              {repartidores.map(r => (
-                <option key={r.id_cliente} value={r.id_cliente}>{r.razon_social || r.email}</option>
-              ))}
-            </select>
-          </div>
-
           <div className="whatsapp-preview">
             <div className="whatsapp-header">
               <IconWhatsapp /> Mensaje que recibirá el cliente
             </div>
             <div className="whatsapp-bubble">
               Hola {pedido.nombre_cliente} 👋 tu pedido <b>{pedido.nombre_pedido}</b> ya está listo en almacén.
-              Responde con tu <b>ubicación</b> y <b>día de entrega</b> preferido.
-              <br /><br />
-              Sigue tu pedido aquí: <span className="link-mock">{link}</span>
+              Responde con tu <b>ubicación de entrega</b> y el <b>día/hora</b> en que esperas recibirlo.
             </div>
             <p className="mock-note">
-              Se envía por WhatsApp Cloud API. Sin credenciales configuradas (WHATSAPP_TOKEN /
-              WHATSAPP_PHONE_ID en Vercel) queda como simulación.
+              Cuando el cliente responda, una IA interpreta su mensaje, guarda ubicación/fecha/hora y busca
+              automáticamente un repartidor libre a esa hora. Si no hay ninguno, aparecerá abajo en
+              "Sin repartidor" para asignarlo tú manualmente.
             </p>
           </div>
 
           <button className="btn-primary" disabled={enviando} onClick={confirmar}>
             {enviando ? 'Guardando...' : 'Confirmar y marcar Listo →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ModalAsignar({ pedido, repartidores, onClose, onConfirmar }) {
+  const [idRepartidor, setIdRepartidor] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  if (!pedido) return null
+
+  async function confirmar() {
+    if (!idRepartidor) return
+    setEnviando(true)
+    await onConfirmar(pedido.id_pedido, idRepartidor)
+    setEnviando(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Asignar repartidor manualmente</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-mute)' }}>
+            No se encontró un repartidor disponible automáticamente para
+            <b style={{ color: 'var(--text-main)' }}> {pedido.nombre_pedido}</b>
+            {pedido.hora_entrega ? ` a las ${pedido.hora_entrega}` : ''}. Elige uno:
+          </p>
+          <div className="field">
+            <label>Repartidor</label>
+            <select className="select-input" value={idRepartidor} onChange={e => setIdRepartidor(e.target.value)}>
+              <option value="">Selecciona...</option>
+              {repartidores.map(r => (
+                <option key={r.id_cliente} value={r.id_cliente}>{r.razon_social || r.email}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn-primary" disabled={!idRepartidor || enviando} onClick={confirmar}>
+            {enviando ? 'Asignando...' : 'Asignar y notificar al cliente →'}
           </button>
         </div>
       </div>
@@ -77,6 +111,7 @@ export default function Acopio() {
   const [repartidores, setRepartidores] = useState([])
   const [filtro, setFiltro] = useState('No listo')
   const [modalPedido, setModalPedido] = useState(null)
+  const [modalAsignar, setModalAsignar] = useState(null)
   const [msg, setMsg] = useState(null)
 
   const cargar = useCallback(async () => {
@@ -89,28 +124,47 @@ export default function Acopio() {
   useEffect(() => { cargar() }, [cargar])
 
   const visibles = pedidos.filter(p => p.estado_acopio === filtro)
+  const sinRepartidor = pedidos.filter(p =>
+    p.estado_acopio === 'Listo' && p.ubicacion_destino_cliente && !p.id_repartidor
+  )
 
-  async function confirmarListo(idPedido, idRepartidor) {
+  async function confirmarListo(idPedido) {
     const pedido = pedidos.find(p => p.id_pedido === idPedido)
 
     const { error } = await supabase.from('pedidos')
-      .update({ estado_acopio: 'Listo', id_repartidor: idRepartidor })
+      .update({ estado_acopio: 'Listo' })
       .eq('id_pedido', idPedido)
 
     if (error) { setMsg({ tipo: 'error', texto: error.message }); return }
 
-    const link = generarLinkSeguimiento(idPedido)
-    const resultado = await enviarWhatsapp(pedido.telefono_cliente, mensajeListo(pedido, link))
+    const resultado = await enviarWhatsapp(pedido.telefono_cliente, mensajePreguntaUbicacion(pedido))
 
     setMsg({
       tipo: 'ok',
       texto: resultado.simulado
         ? 'Pedido marcado como Listo. Mensaje simulado (configura WHATSAPP_TOKEN para enviar de verdad).'
         : resultado.enviado
-          ? 'Pedido marcado como Listo. WhatsApp enviado al cliente.'
+          ? 'Pedido marcado como Listo. WhatsApp enviado, esperando respuesta del cliente.'
           : 'Pedido marcado como Listo, pero el envío de WhatsApp falló.',
     })
     setModalPedido(null)
+    cargar()
+  }
+
+  async function confirmarAsignacion(idPedido, idRepartidor) {
+    const pedido = pedidos.find(p => p.id_pedido === idPedido)
+
+    const { error } = await supabase.from('pedidos')
+      .update({ id_repartidor: idRepartidor })
+      .eq('id_pedido', idPedido)
+
+    if (error) { setMsg({ tipo: 'error', texto: error.message }); return }
+
+    const link = generarLinkSeguimiento(idPedido)
+    await enviarWhatsapp(pedido.telefono_cliente, mensajeAsignado(pedido, link))
+
+    setMsg({ tipo: 'ok', texto: 'Repartidor asignado y cliente notificado.' })
+    setModalAsignar(null)
     cargar()
   }
 
@@ -130,6 +184,33 @@ export default function Acopio() {
 
         {msg && <p className={`msg ${msg.tipo}`}>{msg.tipo === 'ok' ? '✓' : '⚠'} {msg.texto}</p>}
 
+        {sinRepartidor.length > 0 && (
+          <div className="card" style={{ marginBottom: '1.25rem', borderColor: 'var(--module-accent-border)' }}>
+            <h3 className="card-title" style={{ fontSize: '0.95rem' }}>
+              <IconAlert /> Sin repartidor disponible ({sinRepartidor.length})
+            </h3>
+            <p className="card-subtitle" style={{ marginBottom: '1rem' }}>
+              El cliente ya respondió, pero ningún repartidor tenía horario libre a esa hora. Asígnalo tú.
+            </p>
+            <div className="pedidos-list">
+              {sinRepartidor.map(p => (
+                <div key={p.id_pedido} className="pedido-card">
+                  <div className="pedido-info">
+                    <span className="pedido-nombre">{p.nombre_pedido}</span>
+                    <span className="pedido-cliente">
+                      {p.nombre_cliente} · {p.ubicacion_destino_cliente}
+                      {p.hora_entrega ? ` · ${p.hora_entrega}` : ''}
+                    </span>
+                  </div>
+                  <button className="btn-primary btn-sm" onClick={() => setModalAsignar(p)}>
+                    <IconUsers /> Asignar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {visibles.length === 0 ? (
           <div className="empty-state">
             <p className="empty-icon"><IconPackage /></p>
@@ -145,6 +226,9 @@ export default function Acopio() {
                 </div>
                 <div className="pedido-estados">
                   {p.id_repartidor && <span className="estado-badge ok"><IconUsers /> Asignado</span>}
+                  {p.estado_acopio === 'Listo' && !p.ubicacion_destino_cliente && (
+                    <span className="estado-badge pending">Esperando respuesta del cliente</span>
+                  )}
                   {p.estado_acopio === 'No listo' ? (
                     <button className="btn-primary btn-sm" onClick={() => setModalPedido(p)}>
                       <IconCheck /> Marcar Listo
@@ -158,11 +242,12 @@ export default function Acopio() {
           </div>
         )}
 
-      <ModalListo
-        pedido={modalPedido}
+      <ModalListo pedido={modalPedido} onClose={() => setModalPedido(null)} onConfirmar={confirmarListo} />
+      <ModalAsignar
+        pedido={modalAsignar}
         repartidores={repartidores}
-        onClose={() => setModalPedido(null)}
-        onConfirmar={confirmarListo}
+        onClose={() => setModalAsignar(null)}
+        onConfirmar={confirmarAsignacion}
       />
     </AppShell>
   )
