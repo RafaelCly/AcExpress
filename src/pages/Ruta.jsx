@@ -9,6 +9,46 @@ const SIGUIENTE_ESTADO = {
   'En transcurso':{ label: 'Marcar entregado',    next: 'Finalizado' },
 }
 
+function restarMinutos(horaHHMM, minutos) {
+  const [h, m] = horaHHMM.split(':').map(Number)
+  const total = h * 60 + m - minutos
+  const hh = Math.floor(((total % 1440) + 1440) % 1440 / 60)
+  const mm = ((total % 60) + 60) % 60
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+}
+
+// Calcula cuándo debería salir el repartidor para llegar a tiempo, usando la
+// ruta real (OSRM, gratis) entre su posición actual y el destino del cliente.
+function RecomendacionSalida({ pedido }) {
+  const [minutos, setMinutos] = useState(null)
+
+  useEffect(() => {
+    if (!pedido.hora_entrega || pedido.destino_lat == null || pedido.destino_lng == null) return
+    if (!('geolocation' in navigator)) return
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/` +
+          `${pos.coords.longitude},${pos.coords.latitude};${pedido.destino_lng},${pedido.destino_lat}?overview=false`
+        const r = await fetch(url)
+        const data = await r.json()
+        const segundos = data?.routes?.[0]?.duration
+        if (segundos != null) setMinutos(Math.round(segundos / 60))
+      } catch { /* sin conexión a OSRM, se omite la recomendación */ }
+    }, () => {})
+  }, [pedido.hora_entrega, pedido.destino_lat, pedido.destino_lng])
+
+  if (minutos == null || !pedido.hora_entrega) return null
+
+  const horaSalida = restarMinutos(pedido.hora_entrega.slice(0, 5), minutos + 5)
+
+  return (
+    <span className="badge" title="Estimado con tráfico normal, incluye 5 min de margen">
+      <IconClock /> Sal antes de las {horaSalida} · ~{minutos} min de viaje
+    </span>
+  )
+}
+
 function TarjetaHorario({ userId }) {
   const [inicio, setInicio] = useState('')
   const [fin, setFin] = useState('')
@@ -162,9 +202,12 @@ export default function Ruta() {
                   <div className="pedido-info">
                     <span className="pedido-nombre">{p.nombre_pedido}</span>
                     <span className="pedido-cliente">{p.nombre_cliente} · {p.telefono_cliente}</span>
-                    {p.ubicacion_origen && (
-                      <span className="pedido-direccion"><IconMapPin /> {p.ubicacion_origen}</span>
+                    {p.ubicacion_destino_cliente && (
+                      <span className="pedido-direccion"><IconMapPin /> {p.ubicacion_destino_cliente}
+                        {p.hora_entrega && ` · Cliente espera a las ${p.hora_entrega.slice(0, 5)}`}
+                      </span>
                     )}
+                    {p.estado_entrega === 'No iniciado' && <RecomendacionSalida pedido={p} />}
                   </div>
                   <div className="pedido-estados">
                     <span className={`estado-badge ${p.estado_entrega === 'En transcurso' ? 'ok' : 'pending'}`}>
