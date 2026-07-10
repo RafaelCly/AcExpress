@@ -23,12 +23,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { id_pedido, direccion, fecha, hora } = req.body ?? {}
+    const { id_pedido, direccion, distrito, fecha, hora } = req.body ?? {}
 
-    if (!id_pedido || !direccion?.trim() || !fecha || !hora) {
-      res.status(400).json({ error: 'Faltan datos: dirección, fecha y hora son obligatorios.' })
+    if (!id_pedido || !direccion?.trim() || !distrito?.trim() || !fecha || !hora) {
+      res.status(400).json({ error: 'Faltan datos: dirección, distrito, fecha y hora son obligatorios.' })
       return
     }
+
+    // El distrito/ciudad es obligatorio para desambiguar la búsqueda: nombres de
+    // calle como "San Martín" se repiten en decenas de ciudades del Perú, y sin
+    // esta pista Nominatim puede geocodificar a la ciudad equivocada.
+    const direccionCompleta = `${direccion.trim()}, ${distrito.trim()}`
 
     const { data: pedido } = await supabase
       .from('pedidos')
@@ -43,10 +48,10 @@ export default async function handler(req, res) {
       return
     }
 
-    const coords = await geocodificar(direccion)
+    const coords = await geocodificar(direccion.trim(), distrito.trim())
 
     await supabase.from('pedidos').update({
-      ubicacion_destino_cliente: direccion.trim(),
+      ubicacion_destino_cliente: direccionCompleta,
       dia_entrega: fecha,
       hora_entrega: hora,
       destino_lat: coords?.lat ?? null,

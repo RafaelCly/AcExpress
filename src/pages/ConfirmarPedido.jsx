@@ -5,6 +5,7 @@ import { IconTruck, IconMapPin, IconCheck } from '../components/Icons'
 export default function ConfirmarPedido() {
   const { id } = useParams()
   const [direccion, setDireccion] = useState('')
+  const [distrito, setDistrito] = useState('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -19,7 +20,7 @@ export default function ConfirmarPedido() {
       const r = await fetch('/api/confirmar-pedido', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_pedido: id, direccion, fecha, hora }),
+        body: JSON.stringify({ id_pedido: id, direccion, distrito, fecha, hora }),
       })
       const data = await r.json()
       if (!r.ok) { setError(data.error || 'No se pudo confirmar el pedido.'); return }
@@ -58,9 +59,19 @@ export default function ConfirmarPedido() {
               <label><IconMapPin /> Dirección de entrega</label>
               <input
                 type="text"
-                placeholder="Ej. Av. Larco 123, Miraflores"
+                placeholder="Ej. Av. Larco 123"
                 value={direccion}
                 onChange={e => setDireccion(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label>Distrito / ciudad</label>
+              <input
+                type="text"
+                placeholder="Ej. Miraflores, Lima"
+                value={distrito}
+                onChange={e => setDistrito(e.target.value)}
                 required
               />
             </div>

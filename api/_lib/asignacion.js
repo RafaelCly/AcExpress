@@ -1,13 +1,10 @@
 // Lógica compartida de geocodificación y asignación automática de repartidor,
 // usada por api/confirmar-pedido.js (y antes por el webhook de WhatsApp, ya retirado).
 
-// Geocodifica una dirección de texto a lat/lng usando Nominatim (OpenStreetMap, gratis).
-// Nominatim exige un User-Agent descriptivo y máximo ~1 request/seg (uso justo).
-export async function geocodificar(direccion) {
-  if (!direccion) return null
+async function buscarEnNominatim(consulta) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?` +
-      `q=${encodeURIComponent(direccion + ', Peru')}&format=json&limit=1&countrycodes=pe`
+      `q=${encodeURIComponent(consulta)}&format=json&limit=1&countrycodes=pe`
     const r = await fetch(url, { headers: { 'User-Agent': 'ACExpress/1.0 (contacto@acexpress.com)' } })
     const data = await r.json()
     if (!data?.[0]) return null
@@ -15,6 +12,31 @@ export async function geocodificar(direccion) {
   } catch {
     return null
   }
+}
+
+// Geocodifica dirección + distrito/ciudad a lat/lng usando Nominatim (OpenStreetMap, gratis).
+// El callejero de Perú en OSM tiene poca cobertura a nivel de número de puerta, así que si la
+// búsqueda exacta no encuentra nada, se relaja en pasos: primero sin el número, luego solo el
+// distrito/ciudad (mejor caer en el lugar correcto de forma aproximada que fallar o desviarse
+// a una calle homónima en otra región).
+export async function geocodificar(direccion, distrito) {
+  if (!direccion && !distrito) return null
+
+  const partes = [direccion, distrito, 'Peru'].filter(Boolean)
+  const exacto = await buscarEnNominatim(partes.join(', '))
+  if (exacto) return exacto
+
+  if (direccion && distrito) {
+    const sinNumero = direccion.replace(/\d+/g, '').replace(/\s+/g, ' ').trim()
+    if (sinNumero) {
+      const aproximado = await buscarEnNominatim(`${sinNumero}, ${distrito}, Peru`)
+      if (aproximado) return aproximado
+    }
+    const soloDistrito = await buscarEnNominatim(`${distrito}, Peru`)
+    if (soloDistrito) return soloDistrito
+  }
+
+  return null
 }
 
 // Busca, entre los repartidores cuyo horario fijo cubre la hora pedida por el cliente,
