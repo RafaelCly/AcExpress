@@ -2,10 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
+import { enviarWhatsapp } from '../lib/whatsapp'
 import { IconPackage, IconCheck, IconWhatsapp, IconUsers } from '../components/Icons'
 
 function generarLinkSeguimiento(idPedido) {
   return `${window.location.origin}/seguimiento/${idPedido}`
+}
+
+function mensajeListo(pedido, link) {
+  return `Hola ${pedido.nombre_cliente}, tu pedido "${pedido.nombre_pedido}" ya está listo en almacén. ` +
+    `Responde con tu ubicación y día de entrega preferido. Sigue tu pedido aquí: ${link}`
 }
 
 function ModalListo({ pedido, repartidores, onClose, onConfirmar }) {
@@ -42,7 +48,7 @@ function ModalListo({ pedido, repartidores, onClose, onConfirmar }) {
 
           <div className="whatsapp-preview">
             <div className="whatsapp-header">
-              <IconWhatsapp /> Vista previa del mensaje (Sprint 3)
+              <IconWhatsapp /> Mensaje que recibirá el cliente
             </div>
             <div className="whatsapp-bubble">
               Hola {pedido.nombre_cliente} 👋 tu pedido <b>{pedido.nombre_pedido}</b> ya está listo en almacén.
@@ -50,7 +56,10 @@ function ModalListo({ pedido, repartidores, onClose, onConfirmar }) {
               <br /><br />
               Sigue tu pedido aquí: <span className="link-mock">{link}</span>
             </div>
-            <p className="mock-note">⚠ Simulación — el envío real por WhatsApp Business API se activa en el Sprint 3.</p>
+            <p className="mock-note">
+              Se envía por WhatsApp Cloud API. Sin credenciales configuradas (WHATSAPP_TOKEN /
+              WHATSAPP_PHONE_ID en Vercel) queda como simulación.
+            </p>
           </div>
 
           <button className="btn-primary" disabled={enviando} onClick={confirmar}>
@@ -82,12 +91,25 @@ export default function Acopio() {
   const visibles = pedidos.filter(p => p.estado_acopio === filtro)
 
   async function confirmarListo(idPedido, idRepartidor) {
+    const pedido = pedidos.find(p => p.id_pedido === idPedido)
+
     const { error } = await supabase.from('pedidos')
       .update({ estado_acopio: 'Listo', id_repartidor: idRepartidor })
       .eq('id_pedido', idPedido)
 
     if (error) { setMsg({ tipo: 'error', texto: error.message }); return }
-    setMsg({ tipo: 'ok', texto: 'Pedido marcado como Listo. Mensaje simulado enviado.' })
+
+    const link = generarLinkSeguimiento(idPedido)
+    const resultado = await enviarWhatsapp(pedido.telefono_cliente, mensajeListo(pedido, link))
+
+    setMsg({
+      tipo: 'ok',
+      texto: resultado.simulado
+        ? 'Pedido marcado como Listo. Mensaje simulado (configura WHATSAPP_TOKEN para enviar de verdad).'
+        : resultado.enviado
+          ? 'Pedido marcado como Listo. WhatsApp enviado al cliente.'
+          : 'Pedido marcado como Listo, pero el envío de WhatsApp falló.',
+    })
     setModalPedido(null)
     cargar()
   }

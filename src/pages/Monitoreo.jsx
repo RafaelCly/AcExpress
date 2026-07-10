@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
-import { IconRadio, IconMapPin, IconAlert, IconWhatsapp, IconClock } from '../components/Icons'
+import { enviarWhatsapp } from '../lib/whatsapp'
+import MapaRepartidores from '../components/MapaRepartidores'
+import { IconRadio, IconAlert, IconWhatsapp, IconClock } from '../components/Icons'
 
-// Genera una posición pseudo-aleatoria pero estable (basada en el id) para el mock de mapa GPS.
-// El GPS real se conecta en el Sprint 5 (geolocalización del repartidor vía navigator.geolocation / app móvil).
-function posicionMock(id) {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  return { top: 10 + (hash % 80), left: 10 + ((hash >> 8) % 80) }
+function mensajeIncidente(pedido) {
+  return `Hola ${pedido.nombre_cliente}, notamos una demora con tu pedido "${pedido.nombre_pedido}". ` +
+    `Nuestro equipo ya está al tanto y te mantendremos informado.`
 }
 
 function ModalIncidente({ pedido, onClose, onConfirmar }) {
@@ -36,12 +35,14 @@ function ModalIncidente({ pedido, onClose, onConfirmar }) {
           </p>
 
           <div className="whatsapp-preview">
-            <div className="whatsapp-header"><IconWhatsapp /> Notificación al cliente (Sprint 3)</div>
+            <div className="whatsapp-header"><IconWhatsapp /> Notificación al cliente</div>
             <div className="whatsapp-bubble">
               Hola {pedido.nombre_cliente}, notamos una demora con tu pedido <b>{pedido.nombre_pedido}</b>.
               Nuestro equipo ya está al tanto y te mantendremos informado.
             </div>
-            <p className="mock-note">⚠ Simulación — se conecta a la WhatsApp Business API en el Sprint 3.</p>
+            <p className="mock-note">
+              Se envía por WhatsApp Cloud API. Sin credenciales configuradas queda como simulación.
+            </p>
           </div>
 
           <button className="btn-danger" disabled={enviando} onClick={confirmar}>
@@ -74,12 +75,24 @@ export default function Monitoreo() {
   }, [cargar])
 
   async function confirmarIncidente(idPedido) {
+    const pedido = pedidos.find(p => p.id_pedido === idPedido)
+
     const { error } = await supabase.from('pedidos')
       .update({ estado_entrega: 'En incidente' })
       .eq('id_pedido', idPedido)
 
     if (error) { setMsg({ tipo: 'error', texto: error.message }); return }
-    setMsg({ tipo: 'ok', texto: 'Incidente registrado y cliente notificado (simulado).' })
+
+    const resultado = await enviarWhatsapp(pedido.telefono_cliente, mensajeIncidente(pedido))
+
+    setMsg({
+      tipo: 'ok',
+      texto: resultado.simulado
+        ? 'Incidente registrado. Mensaje simulado (configura WHATSAPP_TOKEN para enviar de verdad).'
+        : resultado.enviado
+          ? 'Incidente registrado. Cliente notificado por WhatsApp.'
+          : 'Incidente registrado, pero el envío de WhatsApp falló.',
+    })
     setModalIncidente(null)
     cargar()
   }
@@ -96,26 +109,7 @@ export default function Monitoreo() {
 
         {msg && <p className={`msg ${msg.tipo}`}>{msg.tipo === 'ok' ? '✓' : '⚠'} {msg.texto}</p>}
 
-        {/* Mock de mapa GPS — la integración real (Sprint 5) usa ubicación en vivo del repartidor */}
-        <div className="map-mock">
-          <p className="map-mock-label"><IconMapPin /> Vista de mapa (simulada — Sprint 5 conecta GPS real)</p>
-          <div className="map-mock-grid">
-            {pedidos.map(p => {
-              const pos = posicionMock(p.id_pedido)
-              const incidente = p.estado_entrega === 'En incidente'
-              return (
-                <div
-                  key={p.id_pedido}
-                  className={`map-pin ${incidente ? 'map-pin-alert' : ''}`}
-                  style={{ top: `${pos.top}%`, left: `${pos.left}%` }}
-                  title={p.nombre_pedido}
-                >
-                  <IconMapPin />
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <MapaRepartidores pedidos={pedidos} />
 
         <h3 className="card-title" style={{ fontSize: '1rem', marginTop: '2rem' }}>Pedidos en ruta</h3>
         {pedidos.length === 0 ? (

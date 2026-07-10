@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
-import { IconPackage, IconExcel, IconMapPin, IconEye } from '../components/Icons'
+import { parsearExcelPedidos } from '../lib/excelParser'
+import { IconPackage, IconExcel, IconMapPin, IconEye, IconCheck, IconAlert } from '../components/Icons'
 
 const VACIO = {
   nombre_pedido:     '',
@@ -57,38 +58,51 @@ function DetallePedido({ pedido, onClose }) {
   )
 }
 
-// Filas mock para previsualizar cómo la IA estructurará el Excel (Sprint 2)
-const FILAS_MOCK_EXCEL = [
-  { nombre_pedido: 'Repuestos moto',    nombre_cliente: 'Carlos Ruiz',   telefono_cliente: '912345678' },
-  { nombre_pedido: 'Caja de libros',    nombre_cliente: 'Ana Torres',    telefono_cliente: '987654321' },
-  { nombre_pedido: 'Equipo electrónico',nombre_cliente: 'Luis Vidal',    telefono_cliente: '956781234' },
-]
-
-function PreviewExcel({ archivo, onClose }) {
+function PreviewExcel({ archivo, filas, procesando, onClose, onConfirmar }) {
   if (!archivo) return null
+  const validas   = filas.filter(f => !f.error)
+  const invalidas = filas.filter(f => f.error)
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+      <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
         <div className="modal-header">
           <h3 className="modal-title"><IconExcel /> {archivo}</h3>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <p className="mock-note" style={{ marginBottom: '0.75rem' }}>
-            ⚠ Vista previa simulada. La IA que estructura y valida cada fila (HU-05) se conecta en el Sprint 2.
-          </p>
-          <div className="excel-preview-table">
-            <div className="excel-row excel-head">
-              <span>Pedido</span><span>Cliente</span><span>Teléfono</span>
-            </div>
-            {FILAS_MOCK_EXCEL.map((f, i) => (
-              <div key={i} className="excel-row">
-                <span>{f.nombre_pedido}</span><span>{f.nombre_cliente}</span><span>{f.telefono_cliente}</span>
+          {filas.length === 0 ? (
+            <p className="msg error"><IconAlert /> No se encontraron columnas válidas. Usa la plantilla descargable.</p>
+          ) : (
+            <>
+              <p className="mock-note" style={{ marginBottom: '0.75rem' }}>
+                {validas.length} fila{validas.length !== 1 ? 's' : ''} lista{validas.length !== 1 ? 's' : ''} para importar
+                {invalidas.length > 0 && ` · ${invalidas.length} con errores (se omitirán)`}
+              </p>
+              <div className="excel-preview-table" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                <div className="excel-row excel-head">
+                  <span>Pedido</span><span>Cliente</span><span>Teléfono</span><span>Estado</span>
+                </div>
+                {filas.map((f, i) => (
+                  <div key={i} className="excel-row" style={{ gridTemplateColumns: '1.2fr 1fr 1fr 1fr' }}>
+                    <span>{f.nombre_pedido || '—'}</span>
+                    <span>{f.nombre_cliente || '—'}</span>
+                    <span>{f.telefono_cliente || '—'}</span>
+                    <span className={`estado-badge ${f.error ? 'danger' : 'ok'}`}>
+                      {f.error ? <><IconAlert /> {f.error}</> : <><IconCheck /> OK</>}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <button className="btn-primary" disabled title="Disponible en Sprint 2">
-            Confirmar importación (Sprint 2) →
+            </>
+          )}
+
+          <button
+            className="btn-primary"
+            disabled={validas.length === 0 || procesando}
+            onClick={() => onConfirmar(validas)}
+          >
+            {procesando ? 'Importando...' : `Confirmar importación (${validas.length}) →`}
           </button>
         </div>
       </div>
@@ -103,6 +117,8 @@ export default function NuevoPedido() {
   const [pedidos, setPedidos]     = useState([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [archivoExcel, setArchivoExcel] = useState(null)
+  const [filasExcel, setFilasExcel] = useState([])
+  const [importando, setImportando] = useState(false)
   const [pedidoDetalle, setPedidoDetalle] = useState(null)
   const inputExcelRef = useRef(null)
   const { user, rol } = useAuth()
@@ -144,6 +160,47 @@ export default function NuevoPedido() {
     cargarPedidos()
   }
 
+  async function onSeleccionarExcel(e) {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+
+    setArchivoExcel(file.name)
+    setFilasExcel([])
+    try {
+      const { pedidos: filas } = await parsearExcelPedidos(file)
+      setFilasExcel(filas)
+    } catch {
+      setFilasExcel([])
+    }
+  }
+
+  async function confirmarImportacion(filasValidas) {
+    setImportando(true)
+    const { data: { user: u } } = await supabase.auth.getUser()
+
+    const { error } = await supabase.from('pedidos').insert(
+      filasValidas.map(f => ({
+        nombre_pedido:     f.nombre_pedido,
+        nombre_cliente:    f.nombre_cliente,
+        telefono_cliente:  f.telefono_cliente,
+        peso:              f.peso || null,
+        dia_recojo_origen: f.dia_recojo_origen || null,
+        ubicacion_origen:  f.ubicacion_origen || null,
+        id_cliente:        u.id,
+      }))
+    )
+
+    setImportando(false)
+
+    if (error) { setMsg({ tipo: 'error', texto: error.message }); return }
+
+    setMsg({ tipo: 'ok', texto: `${filasValidas.length} pedido${filasValidas.length !== 1 ? 's' : ''} importado${filasValidas.length !== 1 ? 's' : ''} correctamente` })
+    setArchivoExcel(null)
+    setFilasExcel([])
+    cargarPedidos()
+  }
+
   return (
     <AppShell user={user} rol={rol} titulo="Mis pedidos">
 
@@ -153,14 +210,13 @@ export default function NuevoPedido() {
             <input
               ref={inputExcelRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls"
               style={{ display: 'none' }}
-              onChange={e => {
-                const file = e.target.files[0]
-                if (file) setArchivoExcel(file.name)
-                e.target.value = ''
-              }}
+              onChange={onSeleccionarExcel}
             />
+            <a href="/plantilla-pedidos.xlsx" download className="btn-ghost btn-sm">
+              <IconExcel /> Plantilla
+            </a>
             <button className="btn-excel" onClick={() => inputExcelRef.current.click()}>
               <IconExcel /> {archivoExcel ? archivoExcel : 'Importar Excel'}
             </button>
@@ -267,7 +323,13 @@ export default function NuevoPedido() {
         )}
 
       <DetallePedido pedido={pedidoDetalle} onClose={() => setPedidoDetalle(null)} />
-      <PreviewExcel archivo={archivoExcel} onClose={() => setArchivoExcel(null)} />
+      <PreviewExcel
+        archivo={archivoExcel}
+        filas={filasExcel}
+        procesando={importando}
+        onClose={() => { setArchivoExcel(null); setFilasExcel([]) }}
+        onConfirmar={confirmarImportacion}
+      />
     </AppShell>
   )
 }
