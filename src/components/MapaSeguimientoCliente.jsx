@@ -18,7 +18,26 @@ function iconoPin(color, IconComponente) {
   })
 }
 
-const ICONO_REPARTIDOR = iconoPin('#22d3ee', 'truck')
+// El ícono del repartidor lleva un aro pulsante debajo (patrón "live tracking" tipo Uber),
+// para que se note que la posición está viva aunque el vehículo no se haya movido todavía.
+function iconoRepartidorEnVivo() {
+  const svg = '<path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>'
+  return L.divIcon({
+    className: 'leaflet-pin-wrap',
+    html: `
+      <div class="live-marker">
+        <span class="live-marker-pulse"></span>
+        <div style="color:#22d3ee" class="leaflet-pin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">${svg}</svg>
+        </div>
+      </div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -28],
+  })
+}
+
+const ICONO_REPARTIDOR = iconoRepartidorEnVivo()
 const ICONO_DESTINO    = iconoPin('#a78bfa', 'pin')
 
 // Ruta real por calles vía OSRM (demo pública, gratis, sin API key — sin SLA de producción)
@@ -60,7 +79,7 @@ export default function MapaSeguimientoCliente({ repartidorLat, repartidorLng, d
         <IconMapPin /> {hayRepartidor ? 'Tu repartidor en tiempo real' : 'Tu dirección de entrega'}
       </p>
       <div className="map-real-wrap" style={{ flex: 1 }}>
-        <MapContainer center={centro} zoom={14} scrollWheelZoom={false} style={{ height: typeof alto === 'number' ? `${alto}px` : alto, width: '100%' }}>
+        <MapContainer center={centro} zoom={14} scrollWheelZoom style={{ height: typeof alto === 'number' ? `${alto}px` : alto, width: '100%' }}>
           <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           <Marker position={[destinoLat, destinoLng]} icon={ICONO_DESTINO}>

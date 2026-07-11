@@ -1151,8 +1151,25 @@ button, a, [role="button"] { cursor: pointer; }
   background: rgba(10,12,16,0.85) !important; color: var(--text-main) !important; border-color: var(--glass-border) !important;
 }
 .leaflet-pin-wrap { background: transparent !important; border: none !important; }
-.leaflet-pin { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+.leaflet-pin { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); position: relative; z-index: 1; }
 @keyframes pinPulse { 0%,100% { filter: drop-shadow(0 2px 6px rgba(248,113,113,0.5)); } 50% { filter: drop-shadow(0 2px 14px rgba(248,113,113,0.9)); } }
+
+/* Aro pulsante bajo el ícono del repartidor: indica seguimiento GPS en vivo */
+.live-marker { position: relative; width: 30px; height: 30px; }
+.live-marker-pulse {
+  position: absolute;
+  left: 50%; bottom: 2px;
+  width: 14px; height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: rgba(34,211,238,0.5);
+  animation: liveMarkerPulse 1.8s ease-out infinite;
+}
+@keyframes liveMarkerPulse {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  70%  { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
 
 /* ═══════════════ WhatsApp preview ═══════════════ */
 .whatsapp-preview {
