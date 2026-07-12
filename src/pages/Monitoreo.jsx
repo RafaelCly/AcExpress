@@ -6,9 +6,67 @@ import { enviarWhatsapp } from '../lib/whatsapp'
 import MapaRepartidores from '../components/MapaRepartidores'
 import { IconRadio, IconAlert, IconWhatsapp, IconClock } from '../components/Icons'
 
+const RETRASO_GRACIA_MIN = 20 // minutos de margen tras la hora esperada antes de marcar retraso
+const GPS_SIN_SENAL_MIN  = 15 // minutos sin actualizar posición antes de asumir que se quedó varado
+
 function mensajeIncidente(pedido) {
   return `Hola ${pedido.nombre_cliente}, notamos una demora con tu pedido "${pedido.nombre_pedido}". ` +
     `Nuestro equipo ya está al tanto y te mantendremos informado.`
+}
+
+function mensajeIncidenteAuto(pedido, motivo) {
+  const razon = motivo === 'retraso'
+    ? 'está tomando más tiempo del esperado'
+    : 'perdió señal de ubicación temporalmente'
+  return `Hola ${pedido.nombre_cliente}, tu pedido "${pedido.nombre_pedido}" ${razon}. ` +
+    `Nuestro equipo ya está al tanto y te mantendremos informado.`
+}
+
+// Revisa los pedidos "En transcurso" y marca incidente automáticamente si:
+//  (a) ya pasó la hora que el cliente esperaba, con un margen de gracia, o
+//  (b) el repartidor no actualiza su GPS hace rato (posible varada / celular apagado).
+// Devuelve el mismo array con los pedidos afectados ya actualizados a "En incidente".
+async function detectarIncidentesAutomaticos(pedidos) {
+  const enRuta = pedidos.filter(p => p.estado_entrega === 'En transcurso')
+  if (!enRuta.length) return pedidos
+
+  const idsRepartidor = [...new Set(enRuta.filter(p => p.id_repartidor).map(p => p.id_repartidor))]
+  const { data: ubicaciones } = idsRepartidor.length
+    ? await supabase.from('ubicaciones_repartidor').select('*').in('id_repartidor', idsRepartidor)
+    : { data: [] }
+
+  const ahora = Date.now()
+
+  for (const p of enRuta) {
+    let motivo = null
+
+    if (p.dia_entrega && p.hora_entrega) {
+      const esperado = new Date(`${p.dia_entrega}T${p.hora_entrega}`).getTime()
+      if (!Number.isNaN(esperado) && ahora - esperado > RETRASO_GRACIA_MIN * 60000) {
+        motivo = 'retraso'
+      }
+    }
+
+    if (!motivo && p.id_repartidor) {
+      const ubic = ubicaciones?.find(u => u.id_repartidor === p.id_repartidor)
+      if (ubic?.updated_at) {
+        const minutosSinSenal = (ahora - new Date(ubic.updated_at).getTime()) / 60000
+        if (minutosSinSenal > GPS_SIN_SENAL_MIN) motivo = 'gps'
+      }
+    }
+
+    if (motivo) {
+      const { error } = await supabase.from('pedidos')
+        .update({ estado_entrega: 'En incidente' })
+        .eq('id_pedido', p.id_pedido)
+      if (!error) {
+        p.estado_entrega = 'En incidente'
+        enviarWhatsapp(p.telefono_cliente, mensajeIncidenteAuto(p, motivo)).catch(() => {})
+      }
+    }
+  }
+
+  return pedidos
 }
 
 function ModalIncidente({ pedido, onClose, onConfirmar }) {
@@ -65,7 +123,9 @@ export default function Monitoreo() {
       .from('pedidos').select('*')
       .in('estado_entrega', ['En transcurso', 'En incidente'])
       .order('created_at', { ascending: false })
-    if (data) setPedidos(data)
+    if (!data) return
+    await detectarIncidentesAutomaticos(data)
+    setPedidos(data)
   }, [])
 
   useEffect(() => {
